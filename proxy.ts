@@ -15,14 +15,6 @@ const NGUYEN_CONCEPT04 = "/client-demos/client-8889/architectured"
 const NGUYEN_CONCEPT01_CURRENT = "/client-demos/client-8889/arcsphere-socal"
 
 export function proxy(request: NextRequest) {
-  // Standalone site: the root URL serves the current Concept 01 homepage while the address bar
-  // stays at "/". Internal links still resolve under /client-demos/client-8889/... on the same host.
-  if (request.nextUrl.pathname === "/") {
-    const url = request.nextUrl.clone()
-    url.pathname = NGUYEN_CONCEPT01_CURRENT
-    return NextResponse.rewrite(url)
-  }
-
   if (request.nextUrl.pathname === NGUYEN_CONCEPT01) {
     const url = request.nextUrl.clone()
     url.pathname = NGUYEN_CONCEPT01_CURRENT
@@ -38,7 +30,6 @@ export function proxy(request: NextRequest) {
 
 export const config = {
   matcher: [
-    "/",
     "/client-demos/client-8889/arcsphere",
     "/client-demos/client-8889/architectured",
   ],
