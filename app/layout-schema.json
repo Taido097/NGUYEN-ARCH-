@@ -1,0 +1,27 @@
+{
+  "@context": "https://schema.org",
+  "@type": "Organization",
+  "name": "Tai Do",
+  "url": "https://taido.com",
+  "description": "Award-winning custom web design for small businesses and entrepreneurs",
+  "image": "https://taido.com/og-image.png",
+  "address": {
+    "@type": "PostalAddress",
+    "addressCountry": "US"
+  },
+  "sameAs": [
+    "https://twitter.com/taido",
+    "https://linkedin.com/company/taido",
+    "https://instagram.com/taido"
+  ],
+  "contactPoint": {
+    "@type": "ContactPoint",
+    "telephone": "+1-123-456-7890",
+    "contactType": "Customer Service",
+    "email": "hello@taido.com"
+  },
+  "founder": {
+    "@type": "Person",
+    "name": "Tai Do"
+  }
+}
