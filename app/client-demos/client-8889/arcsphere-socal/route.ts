@@ -1261,19 +1261,20 @@ footer > .nguyen-footer-links > a:focus-visible { text-decoration: underline !im
       el.style.setProperty('visibility', 'hidden', 'important');
       el.style.setProperty('pointer-events', 'none', 'important');
     });
-    // Fallback for mobile: when nav + social + legal share a parent the group approach finds nothing.
-    // Hide each individual legacy nav link by its exact text label instead.
-    if (matches.length === 0) {
-      footer.querySelectorAll('a,span,div,p').forEach((el) => {
-        if (el.closest('.nguyen-footer-links')) return;
-        if (!LEGACY_NAV_LABELS.includes(compact(el.textContent))) return;
-        if (Array.from(el.children).some((c) => LEGACY_NAV_LABELS.includes(compact(c.textContent)))) return;
-        el.setAttribute('aria-hidden', 'true');
-        el.setAttribute('inert', '');
-        el.style.setProperty('visibility', 'hidden', 'important');
-        el.style.setProperty('pointer-events', 'none', 'important');
-      });
-    }
+    // Always also hide the legacy nav anchors themselves. On the mobile breakpoint copy the nav
+    // shares a parent with the social and legal columns, so the group pass above rejects it and
+    // hides nothing — Framer's links then show through underneath the injected nav. Targeting the
+    // anchor directly (rather than deferring to whichever descendant holds the text) hides the link
+    // whatever element the copy wraps its label in. Kept at visibility:hidden so the row still
+    // reserves its space and the desktop layout is unchanged.
+    footer.querySelectorAll('a').forEach((el) => {
+      if (el.closest('.nguyen-footer-links')) return;
+      if (!LEGACY_NAV_LABELS.includes(compact(el.textContent))) return;
+      el.setAttribute('aria-hidden', 'true');
+      el.setAttribute('inert', '');
+      el.style.setProperty('visibility', 'hidden', 'important');
+      el.style.setProperty('pointer-events', 'none', 'important');
+    });
   }
 
   function patchFooterNav() {
