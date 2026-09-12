@@ -187,7 +187,10 @@ const PROCESS_PATCH = `
 const ENGINEERING_ROUTE_GUARD_PATCH = `
 <script id="nguyen-fixed-engineering-route-guard">
 (() => {
-  if (!window.location.pathname.includes('/client-demos/client-8889/arcsphere-socal')) return;
+  // Standalone site: the homepage is also served at "/" (rewritten, so the address bar stays at "/"),
+  // so accept the root path as well as the original concept URL.
+  const nguyenPath = window.location.pathname;
+  if (nguyenPath !== '/' && !nguyenPath.includes('/client-demos/client-8889/arcsphere-socal')) return;
 
   const compact = (value) => (value || '').replace(/\\s+/g, '').toLowerCase();
   const TARGET_URL = window.location.origin + '/client-demos/client-8889/residential/services/engineering-approvals';

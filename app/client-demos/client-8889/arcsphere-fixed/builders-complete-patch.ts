@@ -1,7 +1,10 @@
 export const BUILDERS_COMPLETE_PATCH = `
 <script id="nguyen-concept1-builders-complete-delivery">
 (() => {
-  if (!window.location.pathname.includes('/client-demos/client-8889/arcsphere-socal')) return;
+  // Standalone site: the homepage is also served at "/" (rewritten, so the address bar stays at "/"),
+  // so accept the root path as well as the original concept URL.
+  const nguyenPath = window.location.pathname;
+  if (nguyenPath !== '/' && !nguyenPath.includes('/client-demos/client-8889/arcsphere-socal')) return;
 
   const normalize = (value) => (value || '').replace(/\\s+/g, ' ').trim();
   const compact = (value) => normalize(value).replace(/\\s+/g, '').toLowerCase();
