@@ -1319,14 +1319,10 @@ const FOOTER_PATCH = `
   window.addEventListener('load', patchFooter, { once: true });
   [300, 800, 1800, 3500, 6000, 10000, 20000, 40000].forEach((delay) => setTimeout(patchFooter, delay));
 
-  let footerScheduled = false;
+  let footerTimer;
   const scheduleFooter = () => {
-    if (footerScheduled) return;
-    footerScheduled = true;
-    queueMicrotask(() => {
-      footerScheduled = false;
-      patchFooter();
-    });
+    clearTimeout(footerTimer);
+    footerTimer = setTimeout(patchFooter, 150);
   };
   const observer = new MutationObserver(scheduleFooter);
   if (document.body) observer.observe(document.body, { childList: true, subtree: true, characterData: true });
