@@ -1391,8 +1391,8 @@ const FOOTER_PATCH = `
 
 const FOOTER_NAV_PATCH = `
 <style id="nguyen-footer-nav-styles">
-footer [data-framer-name="footer-links"] { visibility: hidden !important; pointer-events: none !important; }
-footer [data-framer-name="footer-links"] * { visibility: hidden !important; pointer-events: none !important; }
+footer [data-nguyen-legacy-nav="true"],
+footer [data-nguyen-legacy-nav="true"] * { visibility: hidden !important; pointer-events: none !important; }
 footer > .nguyen-footer-links {
   position: absolute !important; left: 71.5% !important; width: 136px !important;
   display: flex !important; flex-direction: column !important; gap: 4px !important;
@@ -1453,6 +1453,21 @@ footer > .nguyen-footer-links > :is(a, button):focus-visible { text-decoration: 
   const LEGACY_NAV_LABELS = ['home', 'about', 'services', 'projects', 'process', 'contact'];
   const OTHER_COLUMN_LABELS = ['pinterest', 'linkedin', 'instagram', 'behance', 'privacypolicy', 'cookiepolicy', 'terms&conditions'];
 
+  function hideLegacyElement(el) {
+    if (!el || el.closest('.nguyen-footer-links')) return;
+    if (el.getAttribute('data-nguyen-legacy-nav') !== 'true') el.setAttribute('data-nguyen-legacy-nav', 'true');
+    if (el.getAttribute('aria-hidden') !== 'true') el.setAttribute('aria-hidden', 'true');
+    if (!el.hasAttribute('inert')) el.setAttribute('inert', '');
+    if (el.style.getPropertyValue('visibility') !== 'hidden' ||
+        el.style.getPropertyPriority('visibility') !== 'important') {
+      el.style.setProperty('visibility', 'hidden', 'important');
+    }
+    if (el.style.getPropertyValue('pointer-events') !== 'none' ||
+        el.style.getPropertyPriority('pointer-events') !== 'important') {
+      el.style.setProperty('pointer-events', 'none', 'important');
+    }
+  }
+
   function hideLegacyNavGroups(footer) {
     const matches = [];
     footer.querySelectorAll('*').forEach((el) => {
@@ -1468,10 +1483,7 @@ footer > .nguyen-footer-links > :is(a, button):focus-visible { text-decoration: 
     matches.forEach((el) => {
       // Hide only the tightest container holding the labels; a wider one takes real content with it.
       if (matches.some((other) => other !== el && el.contains(other))) return;
-      el.setAttribute('aria-hidden', 'true');
-      el.setAttribute('inert', '');
-      el.style.setProperty('visibility', 'hidden', 'important');
-      el.style.setProperty('pointer-events', 'none', 'important');
+      hideLegacyElement(el);
     });
     // Some Framer footer copies combine the old links into the same broad wrapper as other columns.
     // When that happens, identify the legacy navigation specifically by its ABOUT link and full link set.
@@ -1483,12 +1495,7 @@ footer > .nguyen-footer-links > :is(a, button):focus-visible { text-decoration: 
         !OTHER_COLUMN_LABELS.some((label) => text.indexOf(label) !== -1);
     }).sort((a, b) => (a.textContent || '').length - (b.textContent || '').length);
     const legacyAboutGroup = aboutGroups[0];
-    if (legacyAboutGroup) {
-      legacyAboutGroup.setAttribute('aria-hidden', 'true');
-      legacyAboutGroup.setAttribute('inert', '');
-      legacyAboutGroup.style.setProperty('visibility', 'hidden', 'important');
-      legacyAboutGroup.style.setProperty('pointer-events', 'none', 'important');
-    }
+    if (legacyAboutGroup) hideLegacyElement(legacyAboutGroup);
 
     // Always also hide the legacy nav anchors themselves. On the mobile breakpoint copy the nav
     // shares a parent with the social and legal columns, so the group pass above rejects it and
@@ -1499,10 +1506,7 @@ footer > .nguyen-footer-links > :is(a, button):focus-visible { text-decoration: 
     footer.querySelectorAll('a').forEach((el) => {
       if (el.closest('.nguyen-footer-links')) return;
       if (!LEGACY_NAV_LABELS.includes(compact(el.textContent))) return;
-      el.setAttribute('aria-hidden', 'true');
-      el.setAttribute('inert', '');
-      el.style.setProperty('visibility', 'hidden', 'important');
-      el.style.setProperty('pointer-events', 'none', 'important');
+      hideLegacyElement(el);
     });
   }
 
@@ -1513,7 +1517,7 @@ footer > .nguyen-footer-links > :is(a, button):focus-visible { text-decoration: 
     document.querySelectorAll('footer').forEach((footer) => {
       if (getComputedStyle(footer).display === 'none') return;
       const original = footer.querySelector('[data-framer-name="footer-links"]');
-      if (original) { original.setAttribute('aria-hidden', 'true'); original.setAttribute('inert', ''); }
+      // Keep this broad wrapper active because it also owns the social and legal columns.
       if (getComputedStyle(footer).position === 'static') footer.style.position = 'relative';
       let nav = footer.querySelector(':scope > .nguyen-footer-links');
       if (!nav) {
@@ -1621,10 +1625,27 @@ footer > .nguyen-footer-links > :is(a, button):focus-visible { text-decoration: 
   // and disconnect once the footer breakpoint copies have settled — the nav is positioned relative to
   // its footer, so scrolling never needs a re-run.
   let navTimer;
-  const scheduleFooterNav = () => { clearTimeout(navTimer); navTimer = setTimeout(patchFooterNav, 200); };
+  const scheduleFooterNav = (records) => {
+    const relevant = records.some((record) => {
+      const target = record.target?.nodeType === Node.TEXT_NODE ? record.target.parentElement : record.target;
+      const footer = target?.closest?.('footer');
+      if (!footer || target.closest?.('.nguyen-footer-links')) return false;
+      if (record.type === 'childList') return true;
+      const text = compact(target.textContent);
+      return Boolean(target.closest?.('[data-framer-name="footer-links"]')) &&
+        LEGACY_NAV_LABELS.some((label) => text.indexOf(label) !== -1);
+    });
+    if (!relevant) return;
+    clearTimeout(navTimer);
+    navTimer = setTimeout(patchFooterNav, 100);
+  };
   const observer = new MutationObserver(scheduleFooterNav);
-  if (document.body) observer.observe(document.body, { childList: true, subtree: true });
-  setTimeout(() => observer.disconnect(), 60000);
+  if (document.body) observer.observe(document.body, {
+    childList: true,
+    subtree: true,
+    attributes: true,
+    attributeFilter: ['style', 'class', 'aria-hidden', 'inert', 'data-nguyen-legacy-nav'],
+  });
 })();
 <\/script>`
 
