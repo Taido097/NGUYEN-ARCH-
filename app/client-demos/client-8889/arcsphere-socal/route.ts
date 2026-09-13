@@ -1379,6 +1379,22 @@ footer > .nguyen-footer-links > a:focus-visible { text-decoration: underline !im
     const section = card?.closest('section');
     if (section && !document.getElementById('process')) section.id = 'process';
   }
+  // Run at window capture phase so Framer's older footer/card handlers cannot reroute
+  // the injected footer navigation (especially SERVICES) to the ADU page.
+  window.addEventListener('click', (event) => {
+    const link = event.target?.closest?.('.nguyen-footer-links a');
+    if (!link) return;
+    event.preventDefault();
+    event.stopPropagation();
+    if (event.stopImmediatePropagation) event.stopImmediatePropagation();
+    const url = new URL(link.href);
+    const target = url.pathname === location.pathname && url.hash && document.getElementById(url.hash.slice(1));
+    if (target) {
+      target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      history.replaceState(null, '', url.hash);
+    } else location.href = link.href;
+  }, true);
+
   document.addEventListener('click', (event) => {
     const link = event.target?.closest?.('.nguyen-footer-links a');
     if (link) {
