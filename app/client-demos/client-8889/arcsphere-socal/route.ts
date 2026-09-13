@@ -1600,6 +1600,63 @@ footer > .nguyen-footer-links > a:focus-visible { text-decoration: underline !im
 <\/script>`
 
 const ICON_BAR_PATCH = `
+<style id="nguyen-socal-mobile-contact-layout">
+[data-nguyen-mobile-contact-label] { display: none; }
+@media (max-width: 809px) {
+  footer [data-framer-name="icons-group"] {
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 14px !important;
+    width: 100% !important;
+    height: auto !important;
+    overflow: visible !important;
+  }
+  footer [data-framer-name="icons-group"] > [data-nguyen-footer-contact-wrap] {
+    display: block !important;
+    width: 100% !important;
+    height: auto !important;
+    min-width: 0 !important;
+    overflow: visible !important;
+  }
+  footer [data-framer-name="icons-group"] > :not([data-nguyen-footer-contact-wrap]) {
+    display: none !important;
+  }
+  footer [data-nguyen-footer-contact] {
+    display: flex !important;
+    flex-direction: row !important;
+    align-items: center !important;
+    gap: 16px !important;
+    width: 100% !important;
+    height: auto !important;
+    min-width: 0 !important;
+    min-height: 40px !important;
+    overflow: visible !important;
+    padding: 0 !important;
+  }
+  footer [data-nguyen-footer-contact] > :not(:first-child):not([data-nguyen-mobile-contact-label]) {
+    display: none !important;
+  }
+  footer [data-nguyen-mobile-contact-label] {
+    display: flex !important;
+    flex: 1 1 auto !important;
+    flex-direction: column !important;
+    min-width: 0 !important;
+    max-width: calc(100vw - 104px) !important;
+    color: rgb(76, 68, 63) !important;
+    font: 500 12px/1.5 "Inter Display", "Inter Display Placeholder", sans-serif !important;
+    letter-spacing: normal !important;
+    text-transform: none !important;
+    white-space: normal !important;
+    overflow-wrap: anywhere !important;
+    word-break: normal !important;
+  }
+  footer [data-nguyen-mobile-contact-label] > span {
+    display: block !important;
+    max-width: 100% !important;
+  }
+}
+</style>
 <script id="nguyen-socal-icon-bar-patch">
 (() => {
   const ROW_SELECTOR = 'footer [data-framer-name="icons-group"]';
@@ -1634,6 +1691,24 @@ const ICON_BAR_PATCH = `
     });
   }
 
+  function ensureMobileLabel(item, contact) {
+    let label = item.querySelector(':scope > [data-nguyen-mobile-contact-label]');
+    if (!label) {
+      label = document.createElement('span');
+      label.setAttribute('data-nguyen-mobile-contact-label', contact.key);
+      item.appendChild(label);
+    }
+    const lines = contact.text.split('\\n');
+    if (label.childElementCount !== lines.length ||
+        Array.from(label.children).some((line, index) => line.textContent !== lines[index])) {
+      label.replaceChildren(...lines.map((text) => {
+        const line = document.createElement('span');
+        line.textContent = text;
+        return line;
+      }));
+    }
+  }
+
   function patchBar() {
     document.querySelectorAll(ROW_SELECTOR).forEach((row) => {
       // The three direct component wrappers are email, phone and location; the
@@ -1643,7 +1718,9 @@ const ICON_BAR_PATCH = `
       items.forEach((item, index) => {
         const contact = CONTACTS[index];
         setAttribute(item, 'data-nguyen-footer-contact', contact.key);
+        setAttribute(item.parentElement, 'data-nguyen-footer-contact-wrap', contact.key);
         setAttribute(item, 'data-nguyen-contact-href', contact.href);
+        ensureMobileLabel(item, contact);
         setAttribute(item, 'role', 'link');
         setAttribute(item, 'tabindex', '0');
         setAttribute(item, 'aria-label', contact.label + ': ' + contact.text);
