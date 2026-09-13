@@ -5,6 +5,12 @@ export const runtime = 'nodejs';
 const GOOGLE_SHEETS_WEBHOOK_URL =
   'https://script.google.com/macros/s/AKfycbzTOBkNUvd5vW-aTa0qG5S_8ppPlOLlInoDMav-pF0WveebO2iHDotcbmCAqDGVEt9skA/exec';
 
+// Where this site's submissions are emailed. Sent with the payload (rather than set as the script's
+// global address) because the same Apps Script also serves the studio site, which keeps its own
+// recipient. Hardcoded server-side so a request body can never redirect the notification.
+const NOTIFY_TO = 'info@nguyenarchitecture.com,taido097@gmail.com';
+const NOTIFY_FROM_NAME = 'NGUYEN Architecture Website';
+
 function normalize(value: unknown) {
   return typeof value === 'string' ? value.trim() : '';
 }
@@ -114,6 +120,8 @@ export async function POST(request: NextRequest) {
         phone,
         company,
         message,
+        notifyTo: NOTIFY_TO,
+        notifyFromName: NOTIFY_FROM_NAME,
         submittedAt: new Date().toISOString(),
       }),
     });

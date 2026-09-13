@@ -45,8 +45,13 @@ function doPost(e) {
       .getRange(sheet.getLastRow(), 1)
       .setNumberFormat('M/d/yyyy h:mm AM/PM');
 
+    // Each site that posts here can name its own recipients (comma-separated). The studio site
+    // sends none and keeps NOTIFICATION_EMAIL, so one deployment serves both without crossing leads.
+    const notifyTo = clean(payload.notifyTo) || NOTIFICATION_EMAIL;
+    const notifyFromName = clean(payload.notifyFromName) || 'DesignedbyTD Website';
+
     MailApp.sendEmail({
-      to: NOTIFICATION_EMAIL,
+      to: notifyTo,
       replyTo: email,
       subject: `New website request from ${name}`,
       body: [
@@ -61,7 +66,7 @@ function doPost(e) {
         'This lead was also saved in your Google Sheet.',
       ].join('\n'),
       htmlBody: buildEmailHtml(name, email, phone, company, message),
-      name: 'DesignedbyTD Website',
+      name: notifyFromName,
     });
 
     return jsonResponse({
