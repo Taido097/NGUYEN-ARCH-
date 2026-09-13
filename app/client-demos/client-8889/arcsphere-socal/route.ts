@@ -1138,6 +1138,52 @@ const PROJECT_TYPE_SECTION_PATCH = `
 })();
 </script>`
 
+
+const NON_LINKING_PROJECT_PANEL_PATCH = `
+<style id="nguyen-socal-non-linking-project-panel">
+[data-nguyen-non-linking-project-panel="true"] { cursor: default !important; }
+[data-nguyen-non-linking-project-panel="true"] a,
+[data-nguyen-non-linking-project-panel="true"] button { pointer-events: none !important; }
+</style>
+<script id="nguyen-socal-non-linking-project-panel-script">
+(() => {
+  function markPanel() {
+    const heading = Array.from(document.querySelectorAll('h1,h2,h3,h4,h5,h6,p,span,div')).find((el) => {
+      const text = (el.textContent || '').replace(/\\s+/g, ' ').trim().toLowerCase();
+      return text === "let's talk about your projects" &&
+        !Array.from(el.children).some((child) => (child.textContent || '').replace(/\\s+/g, ' ').trim().toLowerCase() === text);
+    });
+    if (!heading) return;
+    let panel = heading;
+    for (let depth = 0; depth < 8 && panel.parentElement; depth += 1) {
+      const parent = panel.parentElement;
+      const bounds = parent.getBoundingClientRect();
+      if (!parent.querySelector('form') && bounds.width > 300 && bounds.height > 250) {
+        panel = parent;
+        break;
+      }
+      panel = parent;
+    }
+    if (panel && panel !== document.body) panel.setAttribute('data-nguyen-non-linking-project-panel', 'true');
+  }
+  function blockPanelClicks(event) {
+    const target = event.target?.nodeType === Node.TEXT_NODE ? event.target.parentElement : event.target;
+    if (!target?.closest?.('[data-nguyen-non-linking-project-panel="true"]')) return;
+    event.preventDefault();
+    event.stopPropagation();
+    if (event.stopImmediatePropagation) event.stopImmediatePropagation();
+  }
+  markPanel();
+  window.addEventListener('load', markPanel, { once: true });
+  [300, 800, 1500, 3000, 6000, 10000].forEach((delay) => setTimeout(markPanel, delay));
+  window.addEventListener('click', blockPanelClicks, true);
+  window.addEventListener('keydown', (event) => {
+    if (event.key !== 'Enter' && event.key !== ' ') return;
+    blockPanelClicks(event);
+  }, true);
+})();
+</script>`
+
 const FOOTER_PATCH = `
 <script id="nguyen-socal-footer-patch">
 (() => {
@@ -2114,7 +2160,7 @@ export async function GET() {
   // The base layer's /ArcSphere/gi branding swap rewrites server-rendered "arcsphere" to
   // "NGUYEN", so cover both the raw and post-rebrand forms (harmless if client-rendered).
   html = html.replace(/hello@(?:arcsphere|nguyen)studio\.ae/gi, 'info@nguyenarchitecture.com')
-  html = html.replace('</body>', `${SPLIT_TEXT_PATCH}${BRAND_PATCH}${SQUARE_IMAGES_PATCH}${SERVICES_ANCHOR_PATCH}${MAIN_NAV_PATCH}${ENGINEERING_SERVICE_PATCH}${PROJECT_CARDS_PATCH}${DESIGN_PANELS_PATCH}${RESIDENTIAL_ROW_IMAGE_PATCH}${BLUEPRINT_IMAGE_PATCH}${PROCESS_TILE_IMAGE_PATCH}${CARD_ROUTING_PATCH}${EXTRA_CARD_CLEANUP_PATCH}${PROJECT_TYPE_SECTION_PATCH}${FOOTER_PATCH}${FOOTER_NAV_PATCH}${ICON_BAR_PATCH}${TESTIMONIAL_PATCH}${HOMEPAGE_MOBILE_HERO_CROP}${HOMEPAGE_HERO_LOCK_PATCH}${HOMEPAGE_SIDE_HERO_LOCK_PATCH}${HERO_CTA_PATCH}${HOMEPAGE_INTRO_IMAGE_SWAP_PATCH}${PAGE_VISIBILITY_GUARD_PATCH}</body>`)
+  html = html.replace('</body>', `${SPLIT_TEXT_PATCH}${BRAND_PATCH}${SQUARE_IMAGES_PATCH}${SERVICES_ANCHOR_PATCH}${MAIN_NAV_PATCH}${ENGINEERING_SERVICE_PATCH}${PROJECT_CARDS_PATCH}${DESIGN_PANELS_PATCH}${RESIDENTIAL_ROW_IMAGE_PATCH}${BLUEPRINT_IMAGE_PATCH}${PROCESS_TILE_IMAGE_PATCH}${CARD_ROUTING_PATCH}${EXTRA_CARD_CLEANUP_PATCH}${PROJECT_TYPE_SECTION_PATCH}${NON_LINKING_PROJECT_PANEL_PATCH}${FOOTER_PATCH}${FOOTER_NAV_PATCH}${ICON_BAR_PATCH}${TESTIMONIAL_PATCH}${HOMEPAGE_MOBILE_HERO_CROP}${HOMEPAGE_HERO_LOCK_PATCH}${HOMEPAGE_SIDE_HERO_LOCK_PATCH}${HERO_CTA_PATCH}${HOMEPAGE_INTRO_IMAGE_SWAP_PATCH}${PAGE_VISIBILITY_GUARD_PATCH}</body>`)
 
   const headers = new Headers(response.headers)
   headers.set('Content-Type', 'text/html; charset=utf-8')
