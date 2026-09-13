@@ -1104,6 +1104,40 @@ const BLUEPRINT_IMAGE_PATCH = `
 })();
 </script>`
 
+
+const PROJECT_TYPE_SECTION_PATCH = `
+<style id="nguyen-socal-hide-project-type">
+/* Hide only the obsolete Project Type choice section in the embedded homepage form. */
+[data-nguyen-project-type-section="true"] { display: none !important; }
+</style>
+<script id="nguyen-socal-hide-project-type-script">
+(() => {
+  function hideProjectTypeSection() {
+    const labels = Array.from(document.querySelectorAll('h1,h2,h3,h4,h5,h6,p,span,div,label')).filter((el) =>
+      (el.textContent || '').replace(/\\s+/g, ' ').trim().toLowerCase() === 'project type' &&
+      !Array.from(el.children).some((child) => (child.textContent || '').replace(/\\s+/g, ' ').trim().toLowerCase() === 'project type')
+    );
+    labels.forEach((label) => {
+      if (label.closest('[data-nguyen-project-type-section="true"]')) return;
+      let section = label;
+      for (let depth = 0; depth < 8 && section.parentElement; depth += 1) {
+        const parent = section.parentElement;
+        const choices = parent.querySelectorAll('button, [role="button"], input[type="radio"]');
+        if (choices.length >= 2 && choices.length <= 4) {
+          section = parent;
+          break;
+        }
+        section = parent;
+      }
+      if (section && section !== document.body) section.setAttribute('data-nguyen-project-type-section', 'true');
+    });
+  }
+  hideProjectTypeSection();
+  window.addEventListener('load', hideProjectTypeSection, { once: true });
+  [300, 800, 1500, 3000, 6000, 10000].forEach((delay) => setTimeout(hideProjectTypeSection, delay));
+})();
+</script>`
+
 const FOOTER_PATCH = `
 <script id="nguyen-socal-footer-patch">
 (() => {
@@ -2041,7 +2075,7 @@ export async function GET() {
   // The base layer's /ArcSphere/gi branding swap rewrites server-rendered "arcsphere" to
   // "NGUYEN", so cover both the raw and post-rebrand forms (harmless if client-rendered).
   html = html.replace(/hello@(?:arcsphere|nguyen)studio\.ae/gi, 'info@nguyenarchitecture.com')
-  html = html.replace('</body>', `${SPLIT_TEXT_PATCH}${BRAND_PATCH}${SQUARE_IMAGES_PATCH}${SERVICES_ANCHOR_PATCH}${MAIN_NAV_PATCH}${ENGINEERING_SERVICE_PATCH}${PROJECT_CARDS_PATCH}${DESIGN_PANELS_PATCH}${RESIDENTIAL_ROW_IMAGE_PATCH}${BLUEPRINT_IMAGE_PATCH}${PROCESS_TILE_IMAGE_PATCH}${CARD_ROUTING_PATCH}${EXTRA_CARD_CLEANUP_PATCH}${FOOTER_PATCH}${FOOTER_NAV_PATCH}${ICON_BAR_PATCH}${TESTIMONIAL_PATCH}${HOMEPAGE_MOBILE_HERO_CROP}${HOMEPAGE_HERO_LOCK_PATCH}${HOMEPAGE_SIDE_HERO_LOCK_PATCH}${HERO_CTA_PATCH}${HOMEPAGE_INTRO_IMAGE_SWAP_PATCH}${PAGE_VISIBILITY_GUARD_PATCH}</body>`)
+  html = html.replace('</body>', `${SPLIT_TEXT_PATCH}${BRAND_PATCH}${SQUARE_IMAGES_PATCH}${SERVICES_ANCHOR_PATCH}${MAIN_NAV_PATCH}${ENGINEERING_SERVICE_PATCH}${PROJECT_CARDS_PATCH}${DESIGN_PANELS_PATCH}${RESIDENTIAL_ROW_IMAGE_PATCH}${BLUEPRINT_IMAGE_PATCH}${PROCESS_TILE_IMAGE_PATCH}${CARD_ROUTING_PATCH}${EXTRA_CARD_CLEANUP_PATCH}${PROJECT_TYPE_SECTION_PATCH}${FOOTER_PATCH}${FOOTER_NAV_PATCH}${ICON_BAR_PATCH}${TESTIMONIAL_PATCH}${HOMEPAGE_MOBILE_HERO_CROP}${HOMEPAGE_HERO_LOCK_PATCH}${HOMEPAGE_SIDE_HERO_LOCK_PATCH}${HERO_CTA_PATCH}${HOMEPAGE_INTRO_IMAGE_SWAP_PATCH}${PAGE_VISIBILITY_GUARD_PATCH}</body>`)
 
   const headers = new Headers(response.headers)
   headers.set('Content-Type', 'text/html; charset=utf-8')
