@@ -108,12 +108,14 @@ export default function ContactPage() {
                       required
                     >
                       <option value="">Select a project type…</option>
-                      <option value="Residential">Residential</option>
+                      <option value="Custom Home">Custom Home</option>
+                      <option value="Addition / Remodel">Addition / Remodel</option>
+                      <option value="ADU">ADU (Accessory Dwelling Unit)</option>
+                      <option value="Multifamily">Multifamily</option>
                       <option value="Commercial">Commercial</option>
-                      <option value="ADU & SB9">ADU &amp; SB9</option>
                       <option value="Land Development">Land Development</option>
-                      <option value="Engineering">Engineering</option>
-                      <option value="Builders Complete Delivery">Builders Complete Delivery</option>
+                      <option value="Engineering / Approvals">Engineering &amp; Approvals</option>
+                      <option value="Other">Other</option>
                     </select>
                   </label>
                 </div>
