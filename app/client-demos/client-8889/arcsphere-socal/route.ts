@@ -1267,9 +1267,19 @@ const FOOTER_PATCH = `
         anchor.style.removeProperty(property);
       });
 
-      const label = anchor.querySelector('[data-framer-name="Label"][data-framer-component-type="RichTextContainer"]') ||
+      let label = anchor.querySelector('[data-framer-name="Label"][data-framer-component-type="RichTextContainer"]') ||
         anchor.querySelector('[data-framer-component-type="RichTextContainer"]');
-      if (!label) return;
+      if (!label) {
+        // Framer hydration flattens this button to a text-only anchor. Recreate only its label wrapper.
+        label = document.createElement('div');
+        label.setAttribute('data-nguyen-footer-email-label', 'true');
+        label.style.setProperty('display', 'flex', 'important');
+        label.style.setProperty('flex-direction', 'column', 'important');
+        label.style.setProperty('align-items', 'flex-start', 'important');
+        label.style.setProperty('width', 'max-content', 'important');
+        label.style.setProperty('max-width', '100%', 'important');
+        anchor.replaceChildren(label);
+      }
 
       const consultationText = 'Consultations: ' + NEW_EMAIL_SECONDARY;
       const collaborationText = 'Collaboration: ' + NEW_EMAIL;
