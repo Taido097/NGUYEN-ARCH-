@@ -1549,8 +1549,12 @@ footer > .nguyen-footer-links > a:focus-visible { text-decoration: underline !im
     // The process cards already exist; mark their containing section for this link.
     const card = Array.from(document.querySelectorAll('h2,h3,h4')).find((el) =>
       /^(consultation|discovery)$/i.test((el.textContent || '').trim()) && !el.closest('footer'));
-    const section = card?.closest('section');
-    if (section && !document.getElementById('process')) section.id = 'process';
+    const namedProcess = document.querySelector('[data-framer-name="pr0cess-section"]');
+    const section = namedProcess || card?.closest('section') || card?.closest('[data-framer-name]');
+    if (section && !document.getElementById('process')) {
+      section.id = 'process';
+      section.style.scrollMarginTop = '90px';
+    }
   }
   // Run at window capture phase so Framer's older footer/card handlers cannot reroute
   // the injected footer navigation (especially SERVICES) to the ADU page.
@@ -1563,8 +1567,8 @@ footer > .nguyen-footer-links > a:focus-visible { text-decoration: underline !im
     const url = new URL(link.href);
     const key = link.getAttribute('data-nguyen-footer-nav');
     if (key === 'home' && url.pathname === location.pathname) {
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-      history.replaceState(null, '', url.pathname);
+      // Reload the clean homepage URL so Framer cannot restore the footer/hash scroll position.
+      location.assign(url.pathname);
       return;
     }
     const target = url.pathname === location.pathname && url.hash && document.getElementById(url.hash.slice(1));
@@ -1582,8 +1586,8 @@ footer > .nguyen-footer-links > a:focus-visible { text-decoration: underline !im
       const url = new URL(link.href);
       const key = link.getAttribute('data-nguyen-footer-nav');
       if (key === 'home' && url.pathname === location.pathname) {
-        window.scrollTo({ top: 0, behavior: 'smooth' });
-        history.replaceState(null, '', url.pathname);
+        // Reload the clean homepage URL so Framer cannot restore the footer/hash scroll position.
+        location.assign(url.pathname);
         return;
       }
       const target = url.pathname === location.pathname && url.hash && document.getElementById(url.hash.slice(1));
