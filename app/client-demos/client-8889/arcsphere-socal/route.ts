@@ -1105,6 +1105,65 @@ const BLUEPRINT_IMAGE_PATCH = `
 </script>`
 
 
+const OLD_SERVICE_OPTIONS_HTML = '<option value="Select Service..." disabled>Select Service...</option><option value="Architectural" selected>Architectural</option><option value="Interior Design">Interior Design</option><option value="Commercial Remodel & Renovation &amp; Remodeling">Commercial Remodel & Renovation &amp; Remodeling</option><option value="Permit Drawing Permit Documentation">Permit Drawing Permit Documentation</option><option value="ENGINEERING">ENGINEERING</option><option value="Construction Consultation">Construction Consultation</option>'
+const NEW_SERVICE_OPTIONS_HTML = '<option value="" disabled selected>Select Service...</option><option value="Custom Home">Custom Home</option><option value="Addition / Remodel">Addition / Remodel</option><option value="ADU &amp; SB9">ADU &amp; SB9</option><option value="Multifamily">Multifamily</option><option value="Commercial">Commercial</option><option value="Land Development">Land Development</option><option value="Engineering &amp; Approvals">Engineering &amp; Approvals</option><option value="Builders Complete Delivery">Builders Complete Delivery</option><option value="Other">Other</option>'
+
+const SERVICE_DROPDOWN_PATCH = `
+<script id="nguyen-socal-service-dropdown-patch">
+(() => {
+  const services = [
+    ['', 'Select Service...', true],
+    ['Custom Home', 'Custom Home', false],
+    ['Addition / Remodel', 'Addition / Remodel', false],
+    ['ADU & SB9', 'ADU & SB9', false],
+    ['Multifamily', 'Multifamily', false],
+    ['Commercial', 'Commercial', false],
+    ['Land Development', 'Land Development', false],
+    ['Engineering & Approvals', 'Engineering & Approvals', false],
+    ['Builders Complete Delivery', 'Builders Complete Delivery', false],
+    ['Other', 'Other', false],
+  ];
+  const expected = services.map(([value]) => value).join('|');
+
+  function isServiceSelect(select) {
+    const values = Array.from(select.options).map((option) => option.value);
+    return values.includes('Architectural') &&
+      values.includes('Interior Design') &&
+      values.includes('Construction Consultation');
+  }
+
+  function patchServiceDropdown() {
+    document.querySelectorAll('select').forEach((select) => {
+      const current = Array.from(select.options).map((option) => option.value).join('|');
+      if (current === expected || !isServiceSelect(select)) return;
+
+      const options = services.map(([value, label, disabled]) => {
+        const option = document.createElement('option');
+        option.value = value;
+        option.textContent = label;
+        option.disabled = disabled;
+        option.selected = value === '';
+        return option;
+      });
+      select.replaceChildren(...options);
+      select.value = '';
+    });
+  }
+
+  patchServiceDropdown();
+  window.addEventListener('load', patchServiceDropdown, { once: true });
+  [300, 800, 1500, 3000, 6000].forEach((delay) => setTimeout(patchServiceDropdown, delay));
+
+  let serviceTimer;
+  const observer = new MutationObserver(() => {
+    clearTimeout(serviceTimer);
+    serviceTimer = setTimeout(patchServiceDropdown, 150);
+  });
+  if (document.body) observer.observe(document.body, { childList: true, subtree: true });
+  setTimeout(() => observer.disconnect(), 12000);
+})();
+</script>`
+
 const PROJECT_TYPE_SECTION_PATCH = `
 <style id="nguyen-socal-hide-project-type">
 /* Hide only the obsolete Project Type choice section in the embedded homepage form. */
@@ -2217,12 +2276,13 @@ export async function GET() {
   for (const [source, target] of HOMEPAGE_SIDE_HERO_SOURCES) html = html.split(source).join(target)
   for (const source of ENGINEERING_TITLE_SOURCES) html = html.split(source).join(ENGINEERING_TITLE)
   html = html.split(ADU_TITLE_SPEC_SOURCE).join(ADU_TITLE_SPEC_TARGET)
+  html = html.split(OLD_SERVICE_OPTIONS_HTML).join(NEW_SERVICE_OPTIONS_HTML)
   // Replace the Framer placeholder email everywhere it appears server-rendered in the HTML.
   // The base layer's /ArcSphere/gi branding swap rewrites server-rendered "arcsphere" to
   // "NGUYEN", so cover both the raw and post-rebrand forms (harmless if client-rendered).
   html = html.replace(/hello@(?:arcsphere|nguyen)studio\.ae/gi, 'info@nguyenarchitecture.com')
   html = html.replace('</head>', `${FOOTER_FIRST_PAINT_STYLE}</head>`)
-  html = html.replace('</body>', `${SPLIT_TEXT_PATCH}${BRAND_PATCH}${SQUARE_IMAGES_PATCH}${SERVICES_ANCHOR_PATCH}${MAIN_NAV_PATCH}${ENGINEERING_SERVICE_PATCH}${PROJECT_CARDS_PATCH}${DESIGN_PANELS_PATCH}${RESIDENTIAL_ROW_IMAGE_PATCH}${BLUEPRINT_IMAGE_PATCH}${PROCESS_TILE_IMAGE_PATCH}${CARD_ROUTING_PATCH}${EXTRA_CARD_CLEANUP_PATCH}${PROJECT_TYPE_SECTION_PATCH}${NON_LINKING_PROJECT_PANEL_PATCH}${FOOTER_PATCH}${FOOTER_NAV_PATCH}${ICON_BAR_PATCH}${TESTIMONIAL_PATCH}${HOMEPAGE_MOBILE_HERO_CROP}${HOMEPAGE_HERO_LOCK_PATCH}${HOMEPAGE_SIDE_HERO_LOCK_PATCH}${HERO_CTA_PATCH}${HOMEPAGE_INTRO_IMAGE_SWAP_PATCH}${PAGE_VISIBILITY_GUARD_PATCH}</body>`)
+  html = html.replace('</body>', `${SPLIT_TEXT_PATCH}${BRAND_PATCH}${SQUARE_IMAGES_PATCH}${SERVICES_ANCHOR_PATCH}${MAIN_NAV_PATCH}${ENGINEERING_SERVICE_PATCH}${PROJECT_CARDS_PATCH}${DESIGN_PANELS_PATCH}${RESIDENTIAL_ROW_IMAGE_PATCH}${BLUEPRINT_IMAGE_PATCH}${PROCESS_TILE_IMAGE_PATCH}${CARD_ROUTING_PATCH}${EXTRA_CARD_CLEANUP_PATCH}${SERVICE_DROPDOWN_PATCH}${PROJECT_TYPE_SECTION_PATCH}${NON_LINKING_PROJECT_PANEL_PATCH}${FOOTER_PATCH}${FOOTER_NAV_PATCH}${ICON_BAR_PATCH}${TESTIMONIAL_PATCH}${HOMEPAGE_MOBILE_HERO_CROP}${HOMEPAGE_HERO_LOCK_PATCH}${HOMEPAGE_SIDE_HERO_LOCK_PATCH}${HERO_CTA_PATCH}${HOMEPAGE_INTRO_IMAGE_SWAP_PATCH}${PAGE_VISIBILITY_GUARD_PATCH}</body>`)
 
   const headers = new Headers(response.headers)
   headers.set('Content-Type', 'text/html; charset=utf-8')
