@@ -1299,6 +1299,23 @@ footer > .nguyen-footer-links > a:focus-visible { text-decoration: underline !im
       el.style.setProperty('visibility', 'hidden', 'important');
       el.style.setProperty('pointer-events', 'none', 'important');
     });
+    // Some Framer footer copies combine the old links into the same broad wrapper as other columns.
+    // When that happens, identify the legacy navigation specifically by its ABOUT link and full link set.
+    const aboutGroups = Array.from(footer.querySelectorAll('*')).filter((el) => {
+      if (el.classList.contains('nguyen-footer-links') || el.closest('.nguyen-footer-links')) return false;
+      const text = compact(el.textContent);
+      return text.indexOf('about') !== -1 &&
+        ['home', 'services', 'projects', 'process', 'contact'].every((label) => text.indexOf(label) !== -1) &&
+        !OTHER_COLUMN_LABELS.some((label) => text.indexOf(label) !== -1);
+    }).sort((a, b) => (a.textContent || '').length - (b.textContent || '').length);
+    const legacyAboutGroup = aboutGroups[0];
+    if (legacyAboutGroup) {
+      legacyAboutGroup.setAttribute('aria-hidden', 'true');
+      legacyAboutGroup.setAttribute('inert', '');
+      legacyAboutGroup.style.setProperty('visibility', 'hidden', 'important');
+      legacyAboutGroup.style.setProperty('pointer-events', 'none', 'important');
+    }
+
     // Always also hide the legacy nav anchors themselves. On the mobile breakpoint copy the nav
     // shares a parent with the social and legal columns, so the group pass above rejects it and
     // hides nothing — Framer's links then show through underneath the injected nav. Targeting the
