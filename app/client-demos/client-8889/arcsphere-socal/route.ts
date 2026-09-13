@@ -1398,15 +1398,15 @@ footer > .nguyen-footer-links {
   display: flex !important; flex-direction: column !important; gap: 4px !important;
   margin: 0 !important; padding: 0 !important; z-index: 5;
 }
-footer > .nguyen-footer-links > a {
+footer > .nguyen-footer-links > :is(a, button) {
   display: flex !important; align-items: center !important; min-height: 44px !important;
   margin: 0 !important; padding: 0 !important; opacity: 1 !important;
   visibility: visible !important; transform: none !important; background: transparent !important;
   color: rgba(79,71,66,.8) !important; font: 500 14px/1.3 "Inter Display", Arial, sans-serif !important;
   letter-spacing: -.4px !important; text-decoration: none !important; border-radius: 0 !important;
 }
-footer > .nguyen-footer-links > a:hover,
-footer > .nguyen-footer-links > a:focus-visible { text-decoration: underline !important; text-underline-offset: 5px; color: #4f4742 !important; }
+footer > .nguyen-footer-links > :is(a, button):hover,
+footer > .nguyen-footer-links > :is(a, button):focus-visible { text-decoration: underline !important; text-underline-offset: 5px; color: #4f4742 !important; }
 @media (max-width: 809px) {
   footer > .nguyen-footer-links {
     left: var(--footer-nav-mobile-left, 24px) !important;
@@ -1419,7 +1419,7 @@ footer > .nguyen-footer-links > a:focus-visible { text-decoration: underline !im
     pointer-events: auto !important;
     touch-action: manipulation !important;
   }
-  footer > .nguyen-footer-links > a {
+  footer > .nguyen-footer-links > :is(a, button) {
     position: relative !important;
     z-index: 1 !important;
     min-height: 36px !important;
@@ -1520,9 +1520,10 @@ footer > .nguyen-footer-links > a:focus-visible { text-decoration: underline !im
         nav.className = 'nguyen-footer-links';
         nav.setAttribute('aria-label', 'Footer navigation');
         ['home', 'services', 'projects', 'process', 'contact'].forEach((key) => {
-          const link = document.createElement('a');
+          const link = document.createElement('button');
+          link.type = 'button';
           link.textContent = key.toUpperCase();
-          link.href = destinations[key];
+          link.setAttribute('data-nguyen-footer-href', destinations[key]);
           link.setAttribute('data-nguyen-footer-nav', key);
           nav.appendChild(link);
         });
@@ -1559,12 +1560,12 @@ footer > .nguyen-footer-links > a:focus-visible { text-decoration: underline !im
   // Run at window capture phase so Framer's older footer/card handlers cannot reroute
   // the injected footer navigation (especially SERVICES) to the ADU page.
   window.addEventListener('click', (event) => {
-    const link = event.target?.closest?.('.nguyen-footer-links a');
+    const link = event.target?.closest?.('.nguyen-footer-links [data-nguyen-footer-nav]');
     if (!link) return;
     event.preventDefault();
     event.stopPropagation();
     if (event.stopImmediatePropagation) event.stopImmediatePropagation();
-    const url = new URL(link.href);
+    const url = new URL(link.getAttribute('data-nguyen-footer-href') || link.href);
     const key = link.getAttribute('data-nguyen-footer-nav');
     if (key === 'home' && url.pathname === location.pathname) {
       // Reload the clean homepage URL so Framer cannot restore the footer/hash scroll position.
@@ -1575,15 +1576,15 @@ footer > .nguyen-footer-links > a:focus-visible { text-decoration: underline !im
     if (target) {
       target.scrollIntoView({ behavior: 'smooth', block: 'start' });
       history.replaceState(null, '', url.hash);
-    } else location.href = link.href;
+    } else location.href = url.href;
   }, true);
 
   document.addEventListener('click', (event) => {
-    const link = event.target?.closest?.('.nguyen-footer-links a');
+    const link = event.target?.closest?.('.nguyen-footer-links [data-nguyen-footer-nav]');
     if (link) {
       event.preventDefault();
       event.stopImmediatePropagation();
-      const url = new URL(link.href);
+      const url = new URL(link.getAttribute('data-nguyen-footer-href') || link.href);
       const key = link.getAttribute('data-nguyen-footer-nav');
       if (key === 'home' && url.pathname === location.pathname) {
         // Reload the clean homepage URL so Framer cannot restore the footer/hash scroll position.
@@ -1594,7 +1595,7 @@ footer > .nguyen-footer-links > a:focus-visible { text-decoration: underline !im
       if (target) {
         target.scrollIntoView({ behavior: 'smooth', block: 'start' });
         history.replaceState(null, '', url.hash);
-      } else location.href = link.href;
+      } else location.href = url.href;
       return;
     }
     // The base arcsphere layer's fixNav sets unrecognized footer anchors to the homepage URL
