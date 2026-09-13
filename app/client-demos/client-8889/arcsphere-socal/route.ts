@@ -1403,7 +1403,8 @@ footer > .nguyen-footer-links > :is(a, button) {
   margin: 0 !important; padding: 0 !important; opacity: 1 !important;
   visibility: visible !important; transform: none !important; background: transparent !important;
   color: rgba(79,71,66,.8) !important; font: 500 14px/1.3 "Inter Display", Arial, sans-serif !important;
-  letter-spacing: -.4px !important; text-decoration: none !important; border-radius: 0 !important;
+  letter-spacing: -.4px !important; text-decoration: none !important; border: 0 !important;
+  border-radius: 0 !important; cursor: pointer !important;
 }
 footer > .nguyen-footer-links > :is(a, button):hover,
 footer > .nguyen-footer-links > :is(a, button):focus-visible { text-decoration: underline !important; text-underline-offset: 5px; color: #4f4742 !important; }
@@ -1557,9 +1558,9 @@ footer > .nguyen-footer-links > :is(a, button):focus-visible { text-decoration: 
       section.style.scrollMarginTop = '90px';
     }
   }
-  // Run at window capture phase so Framer's older footer/card handlers cannot reroute
-  // the injected footer navigation (especially SERVICES) to the ADU page.
-  window.addEventListener('click', (event) => {
+  // Route on pointerdown before Framer's older window-level click handler can swallow
+  // the interaction or reroute SERVICES to the ADU page. Pointer events cover touch and mouse.
+  window.addEventListener('pointerdown', (event) => {
     const link = event.target?.closest?.('.nguyen-footer-links [data-nguyen-footer-nav]');
     if (!link) return;
     event.preventDefault();
