@@ -828,6 +828,7 @@ const PROJECT_CARDS_PATCH = `
     window.__nguyenCardRouting = true;
     document.addEventListener('click', (e) => {
       const start = e.target && e.target.nodeType === Node.TEXT_NODE ? e.target.parentElement : e.target;
+      if (start?.closest?.('input, textarea, select, button[type="submit"], [role="textbox"], [role="combobox"], [role="option"], form')) return;
       const card = start && start.closest ? start.closest('[data-nguyen-card-url]') : null;
       if (!card) return;
       const url = card.getAttribute('data-nguyen-card-url');
@@ -917,6 +918,7 @@ const DESIGN_PANELS_PATCH = `
     window.__nguyenPanelRouting = true;
     document.addEventListener('click', (e) => {
       const start = e.target && e.target.nodeType === Node.TEXT_NODE ? e.target.parentElement : e.target;
+      if (start?.closest?.('input, textarea, select, button[type="submit"], [role="textbox"], [role="combobox"], [role="option"], form')) return;
       const panel = start && start.closest ? start.closest('[data-nguyen-panel-url]') : null;
       if (!panel) return;
       const url = panel.getAttribute('data-nguyen-panel-url');
@@ -1861,6 +1863,8 @@ const HERO_CTA_PATCH = `
   if (!window.__nguyenHeroCtaRouting) {
     window.__nguyenHeroCtaRouting = true;
     document.addEventListener('click', (e) => {
+      const _start = e.target && e.target.nodeType === Node.TEXT_NODE ? e.target.parentElement : e.target;
+      if (_start?.closest?.('input, textarea, select, button[type="submit"], [role="textbox"], [role="combobox"], [role="option"], form')) return;
       let node = e.target;
       while (node && node !== document.body) {
         if (node.nodeType === Node.ELEMENT_NODE && !isInNav(node)) {
