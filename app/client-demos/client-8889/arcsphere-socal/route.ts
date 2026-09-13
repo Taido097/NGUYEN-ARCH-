@@ -1326,15 +1326,28 @@ footer > .nguyen-footer-links > a:focus-visible { text-decoration: underline !im
   }
   document.addEventListener('click', (event) => {
     const link = event.target?.closest?.('.nguyen-footer-links a');
-    if (!link) return;
+    if (link) {
+      event.preventDefault();
+      event.stopImmediatePropagation();
+      const url = new URL(link.href);
+      const target = url.pathname === location.pathname && url.hash && document.getElementById(url.hash.slice(1));
+      if (target) {
+        target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        history.replaceState(null, '', url.hash);
+      } else location.href = link.href;
+      return;
+    }
+    // The base arcsphere layer's fixNav sets unrecognized footer anchors to the homepage URL
+    // (window.location.origin + window.location.pathname = '/') because it cannot identify them as
+    // hero CTAs. On this standalone site that routes back to the NGUYEN homepage. Catch any
+    // Framer-generated footer anchor that is NOT a mailto/tel/external link and route it to contact.
+    const footerA = event.target?.closest?.('footer a');
+    if (!footerA || footerA.closest('.nguyen-footer-links')) return;
+    const href = footerA.getAttribute('href') || '';
+    if (href.startsWith('mailto:') || href.startsWith('tel:') || href.startsWith('http')) return;
     event.preventDefault();
     event.stopImmediatePropagation();
-    const url = new URL(link.href);
-    const target = url.pathname === location.pathname && url.hash && document.getElementById(url.hash.slice(1));
-    if (target) {
-      target.scrollIntoView({ behavior: 'smooth', block: 'start' });
-      history.replaceState(null, '', url.hash);
-    } else location.href = link.href;
+    location.href = destinations.contact;
   }, true);
   patchFooterNav();
   window.addEventListener('load', patchFooterNav, { once: true });
