@@ -1249,15 +1249,31 @@ const FOOTER_PATCH = `
         a.setAttribute('href', 'mailto:' + NEW_EMAIL_SECONDARY + ',' + NEW_EMAIL);
       }
       const displayed = (a.textContent || '').trim();
-      if (displayed && displayed.includes('@')) a.textContent = 'Consultations: ' + NEW_EMAIL_SECONDARY + '\\nCollaboration: ' + NEW_EMAIL;
-      a.style.setProperty('white-space', 'pre-line', 'important');
-      a.style.setProperty('line-height', '1.6', 'important');
+      if (displayed && displayed.includes('@')) {
+        a.replaceChildren();
+        const consultationLine = document.createElement('span');
+        consultationLine.textContent = 'Consultations: ' + NEW_EMAIL_SECONDARY;
+        const collaborationLine = document.createElement('span');
+        collaborationLine.textContent = 'Collaboration: ' + NEW_EMAIL;
+        [consultationLine, collaborationLine].forEach((line) => {
+          line.style.setProperty('display', 'block', 'important');
+          line.style.setProperty('max-width', '100%', 'important');
+          line.style.setProperty('overflow-wrap', 'anywhere', 'important');
+        });
+        a.append(consultationLine, collaborationLine);
+      }
+      a.style.setProperty('display', 'flex', 'important');
+      a.style.setProperty('flex-direction', 'column', 'important');
+      a.style.setProperty('gap', '4px', 'important');
+      a.style.setProperty('max-width', '100%', 'important');
+      a.style.setProperty('min-width', '0', 'important');
+      a.style.setProperty('white-space', 'normal', 'important');
+      a.style.setProperty('line-height', '1.5', 'important');
       a.style.setProperty('color', 'inherit', 'important');
       a.style.setProperty('text-decoration', 'none', 'important');
-      a.style.setProperty('font-size', 'clamp(11px,1vw,13px)', 'important');
+      a.style.setProperty('font-size', 'clamp(10px,1vw,13px)', 'important');
       a.style.setProperty('word-break', 'normal', 'important');
-      a.style.setProperty('overflow-wrap', 'normal', 'important');
-      a.style.setProperty('white-space', 'nowrap', 'important');
+      a.style.setProperty('overflow-wrap', 'anywhere', 'important');
     });
   }
 
