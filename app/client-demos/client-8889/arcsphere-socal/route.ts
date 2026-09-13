@@ -1147,6 +1147,7 @@ const FOOTER_PATCH = `
   const NEW_ADDR = '7171 Warner Ave., Ste. B, Huntington Beach, CA 92647';
   const NEW_EMAIL = 'info@nguyenarchitecture.com';
   const NEW_EMAIL_SECONDARY = 'consultant@nguyenarchitecture.com';
+  const CONSULTATION_EMAIL = NEW_EMAIL_SECONDARY;
   // Match both old placeholder phone formats (Indonesian +62 and UAE +971).
   const PHONE_PATTERNS = ['6281234567890', '971559876543'];
   // Match both old address formats: long tagline and short "Dubai, UAE".
@@ -1199,10 +1200,10 @@ const FOOTER_PATCH = `
     // Email: fix href AND displayed text for any old placeholder address.
     document.querySelectorAll('a[href^="mailto:"]').forEach((a) => {
       if (!a.getAttribute('href').includes('nguyenarchitecture.com')) {
-        a.setAttribute('href', 'mailto:' + NEW_EMAIL + ',' + NEW_EMAIL_SECONDARY);
+        a.setAttribute('href', 'mailto:' + NEW_EMAIL_SECONDARY + ',' + NEW_EMAIL);
       }
       const displayed = (a.textContent || '').trim();
-      if (displayed && displayed.includes('@')) a.textContent = NEW_EMAIL + '  ·  ' + NEW_EMAIL_SECONDARY;
+      if (displayed && displayed.includes('@')) a.textContent = 'Consultations: ' + NEW_EMAIL_SECONDARY + '  ·  Collaboration: ' + NEW_EMAIL;
       a.style.setProperty('color', 'inherit', 'important');
       a.style.setProperty('text-decoration', 'none', 'important');
       a.style.setProperty('font-size', 'clamp(11px,1vw,13px)', 'important');
@@ -1408,7 +1409,7 @@ const ICON_BAR_PATCH = `
 (() => {
   const ROW_SELECTOR = 'footer [data-framer-name="icons-group"]';
   const CONTACTS = [
-    { key: 'email', text: 'info@nguyenarchitecture.com  ·  consultant@nguyenarchitecture.com', label: 'Email NGUYEN Architecture', href: 'mailto:info@nguyenarchitecture.com,consultant@nguyenarchitecture.com' },
+    { key: 'email', text: 'Consultations: consultant@nguyenarchitecture.com  ·  Collaboration: info@nguyenarchitecture.com', label: 'Consultations and collaboration email', href: 'mailto:consultant@nguyenarchitecture.com,info@nguyenarchitecture.com' },
     { key: 'phone', text: '(714) 707-8889', label: 'Call NGUYEN Architecture', href: 'tel:+17147078889' },
     { key: 'location', text: 'California', label: 'View NGUYEN Architecture location', href: 'https://www.google.com/maps/search/?api=1&query=California', external: true },
   ];
