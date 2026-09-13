@@ -1184,6 +1184,34 @@ const NON_LINKING_PROJECT_PANEL_PATCH = `
 })();
 </script>`
 
+const FOOTER_FIRST_PAINT_STYLE = `
+<style id="nguyen-socal-footer-first-paint">
+footer a[href^="mailto:"] {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 4px !important;
+  max-width: 100% !important;
+  min-width: 0 !important;
+  white-space: normal !important;
+  line-height: 1.5 !important;
+  color: inherit !important;
+  text-decoration: none !important;
+  font-size: clamp(10px, 1vw, 13px) !important;
+  text-transform: none !important;
+  letter-spacing: normal !important;
+  word-break: normal !important;
+  overflow-wrap: anywhere !important;
+}
+footer a[href^="mailto:"] > * {
+  display: block !important;
+  max-width: 100% !important;
+  font: inherit !important;
+  text-transform: none !important;
+  letter-spacing: normal !important;
+  overflow-wrap: anywhere !important;
+}
+</style>`
+
 const FOOTER_PATCH = `
 <script id="nguyen-socal-footer-patch">
 (() => {
@@ -1249,12 +1277,22 @@ const FOOTER_PATCH = `
         a.setAttribute('href', 'mailto:' + NEW_EMAIL_SECONDARY + ',' + NEW_EMAIL);
       }
       const displayed = (a.textContent || '').trim();
-      if (displayed && displayed.includes('@')) {
+      const consultationText = 'Consultations: ' + NEW_EMAIL_SECONDARY;
+      const collaborationText = 'Collaboration: ' + NEW_EMAIL;
+      const consultationRow = a.querySelector('[data-nguyen-footer-email="consultations"]');
+      const collaborationRow = a.querySelector('[data-nguyen-footer-email="collaboration"]');
+      const needsRows = displayed && displayed.includes('@') &&
+        (!consultationRow || !collaborationRow ||
+          consultationRow.textContent !== consultationText ||
+          collaborationRow.textContent !== collaborationText);
+      if (needsRows) {
         a.replaceChildren();
         const consultationLine = document.createElement('span');
-        consultationLine.textContent = 'Consultations: ' + NEW_EMAIL_SECONDARY;
+        consultationLine.setAttribute('data-nguyen-footer-email', 'consultations');
+        consultationLine.textContent = consultationText;
         const collaborationLine = document.createElement('span');
-        collaborationLine.textContent = 'Collaboration: ' + NEW_EMAIL;
+        collaborationLine.setAttribute('data-nguyen-footer-email', 'collaboration');
+        collaborationLine.textContent = collaborationText;
         [consultationLine, collaborationLine].forEach((line) => {
           line.style.setProperty('display', 'block', 'important');
           line.style.setProperty('max-width', '100%', 'important');
@@ -1283,8 +1321,15 @@ const FOOTER_PATCH = `
 
   // patchFooter tree-walks every footer copy; running it on each mutation batch during a mobile scroll
   // added up. Coalesce bursts into one delayed run — the timed passes above still cover late renders.
-  let footerTimer;
-  const scheduleFooter = () => { clearTimeout(footerTimer); footerTimer = setTimeout(patchFooter, 150); };
+  let footerScheduled = false;
+  const scheduleFooter = () => {
+    if (footerScheduled) return;
+    footerScheduled = true;
+    queueMicrotask(() => {
+      footerScheduled = false;
+      patchFooter();
+    });
+  };
   const obs = new MutationObserver(scheduleFooter);
   if (document.body) obs.observe(document.body, { childList: true, subtree: true, characterData: true });
   setTimeout(() => obs.disconnect(), 60000);
@@ -2178,6 +2223,7 @@ export async function GET() {
   // The base layer's /ArcSphere/gi branding swap rewrites server-rendered "arcsphere" to
   // "NGUYEN", so cover both the raw and post-rebrand forms (harmless if client-rendered).
   html = html.replace(/hello@(?:arcsphere|nguyen)studio\.ae/gi, 'info@nguyenarchitecture.com')
+  html = html.replace('</head>', `${FOOTER_FIRST_PAINT_STYLE}</head>`)
   html = html.replace('</body>', `${SPLIT_TEXT_PATCH}${BRAND_PATCH}${SQUARE_IMAGES_PATCH}${SERVICES_ANCHOR_PATCH}${MAIN_NAV_PATCH}${ENGINEERING_SERVICE_PATCH}${PROJECT_CARDS_PATCH}${DESIGN_PANELS_PATCH}${RESIDENTIAL_ROW_IMAGE_PATCH}${BLUEPRINT_IMAGE_PATCH}${PROCESS_TILE_IMAGE_PATCH}${CARD_ROUTING_PATCH}${EXTRA_CARD_CLEANUP_PATCH}${PROJECT_TYPE_SECTION_PATCH}${NON_LINKING_PROJECT_PANEL_PATCH}${FOOTER_PATCH}${FOOTER_NAV_PATCH}${ICON_BAR_PATCH}${TESTIMONIAL_PATCH}${HOMEPAGE_MOBILE_HERO_CROP}${HOMEPAGE_HERO_LOCK_PATCH}${HOMEPAGE_SIDE_HERO_LOCK_PATCH}${HERO_CTA_PATCH}${HOMEPAGE_INTRO_IMAGE_SWAP_PATCH}${PAGE_VISIBILITY_GUARD_PATCH}</body>`)
 
   const headers = new Headers(response.headers)
