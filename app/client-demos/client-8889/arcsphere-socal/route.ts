@@ -1186,7 +1186,7 @@ const NON_LINKING_PROJECT_PANEL_PATCH = `
 
 const FOOTER_FIRST_PAINT_STYLE = `
 <style id="nguyen-socal-footer-first-paint">
-footer a[href^="mailto:"] {
+[data-framer-name="Email"] a[href^="mailto:"] {
   display: flex !important;
   flex-direction: column !important;
   gap: 4px !important;
@@ -1196,13 +1196,13 @@ footer a[href^="mailto:"] {
   line-height: 1.5 !important;
   color: inherit !important;
   text-decoration: none !important;
-  font-size: clamp(10px, 1vw, 13px) !important;
+  font-size: 12px !important;
   text-transform: none !important;
   letter-spacing: normal !important;
   word-break: normal !important;
   overflow-wrap: anywhere !important;
 }
-footer a[href^="mailto:"] > * {
+[data-framer-name="Email"] a[href^="mailto:"] > * {
   display: block !important;
   max-width: 100% !important;
   font: inherit !important;
@@ -1272,7 +1272,7 @@ const FOOTER_PATCH = `
     });
 
     // Email: fix href AND displayed text for any old placeholder address.
-    document.querySelectorAll('a[href^="mailto:"]').forEach((a) => {
+    document.querySelectorAll('[data-framer-name="Email"] a[href^="mailto:"]').forEach((a) => {
       if (!a.getAttribute('href').includes('nguyenarchitecture.com')) {
         a.setAttribute('href', 'mailto:' + NEW_EMAIL_SECONDARY + ',' + NEW_EMAIL);
       }
@@ -1309,7 +1309,10 @@ const FOOTER_PATCH = `
       a.style.setProperty('line-height', '1.5', 'important');
       a.style.setProperty('color', 'inherit', 'important');
       a.style.setProperty('text-decoration', 'none', 'important');
-      a.style.setProperty('font-size', 'clamp(10px,1vw,13px)', 'important');
+      a.style.setProperty('font-size', '12px', 'important');
+      a.style.setProperty('font-weight', '500', 'important');
+      a.style.setProperty('text-transform', 'none', 'important');
+      a.style.setProperty('letter-spacing', 'normal', 'important');
       a.style.setProperty('word-break', 'normal', 'important');
       a.style.setProperty('overflow-wrap', 'anywhere', 'important');
     });
