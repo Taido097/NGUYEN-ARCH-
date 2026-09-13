@@ -1414,7 +1414,18 @@ footer > .nguyen-footer-links > a:focus-visible { text-decoration: underline !im
     width: min(220px, calc(100% - 48px)) !important;
     gap: 0 !important;
   }
-  footer > .nguyen-footer-links > a { min-height: 36px !important; }
+  footer > .nguyen-footer-links {
+    z-index: 9999 !important;
+    pointer-events: auto !important;
+    touch-action: manipulation !important;
+  }
+  footer > .nguyen-footer-links > a {
+    position: relative !important;
+    z-index: 1 !important;
+    min-height: 36px !important;
+    pointer-events: auto !important;
+    touch-action: manipulation !important;
+  }
 }
 </style>
 <script id="nguyen-socal-footer-nav-patch">
@@ -1550,6 +1561,12 @@ footer > .nguyen-footer-links > a:focus-visible { text-decoration: underline !im
     event.stopPropagation();
     if (event.stopImmediatePropagation) event.stopImmediatePropagation();
     const url = new URL(link.href);
+    const key = link.getAttribute('data-nguyen-footer-nav');
+    if (key === 'home' && url.pathname === location.pathname) {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      history.replaceState(null, '', url.pathname);
+      return;
+    }
     const target = url.pathname === location.pathname && url.hash && document.getElementById(url.hash.slice(1));
     if (target) {
       target.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -1563,6 +1580,12 @@ footer > .nguyen-footer-links > a:focus-visible { text-decoration: underline !im
       event.preventDefault();
       event.stopImmediatePropagation();
       const url = new URL(link.href);
+      const key = link.getAttribute('data-nguyen-footer-nav');
+      if (key === 'home' && url.pathname === location.pathname) {
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+        history.replaceState(null, '', url.pathname);
+        return;
+      }
       const target = url.pathname === location.pathname && url.hash && document.getElementById(url.hash.slice(1));
       if (target) {
         target.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -1662,7 +1685,7 @@ const ICON_BAR_PATCH = `
   const ROW_SELECTOR = 'footer [data-framer-name="icons-group"]';
   const CONTACTS = [
     { key: 'email', text: 'Consultations: consultant@nguyenarchitecture.com\\nCollaboration: info@nguyenarchitecture.com', label: 'Consultations and collaboration email', href: 'mailto:consultant@nguyenarchitecture.com' },
-    { key: 'phone', text: '(714) 707-8889', label: 'Call NGUYEN Architecture', href: 'tel:+17147078889' },
+    { key: 'phone', text: '(714) 707-8889  ·  (209) 233-8888', label: 'Call NGUYEN Architecture', href: 'tel:+17147078889' },
     { key: 'location', text: 'California', label: 'View NGUYEN Architecture location', href: 'https://www.google.com/maps/search/?api=1&query=California', external: true },
   ];
 
