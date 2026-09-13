@@ -1296,6 +1296,13 @@ const FOOTER_PATCH = `
         [consultationLine, collaborationLine].forEach((line) => {
           line.style.setProperty('display', 'block', 'important');
           line.style.setProperty('max-width', '100%', 'important');
+          line.style.setProperty('font-family', '"Inter Display", "Inter Display Placeholder", sans-serif', 'important');
+          line.style.setProperty('font-size', '12px', 'important');
+          line.style.setProperty('font-weight', '500', 'important');
+          line.style.setProperty('line-height', '150%', 'important');
+          line.style.setProperty('text-transform', 'none', 'important');
+          line.style.setProperty('letter-spacing', 'normal', 'important');
+          line.style.setProperty('white-space', 'normal', 'important');
           line.style.setProperty('overflow-wrap', 'anywhere', 'important');
         });
         a.append(consultationLine, collaborationLine);
