@@ -1186,29 +1186,17 @@ const NON_LINKING_PROJECT_PANEL_PATCH = `
 
 const FOOTER_FIRST_PAINT_STYLE = `
 <style id="nguyen-socal-footer-first-paint">
-[data-framer-name="Email"] a[href^="mailto:"] {
-  display: flex !important;
-  flex-direction: column !important;
-  gap: 4px !important;
-  max-width: 100% !important;
-  min-width: 0 !important;
-  white-space: normal !important;
-  line-height: 1.5 !important;
-  color: inherit !important;
-  text-decoration: none !important;
+[data-framer-name="Email"] [data-nguyen-footer-email] {
+  margin: 0 !important;
+  font-family: "Inter Display", "Inter Display Placeholder", sans-serif !important;
   font-size: 12px !important;
+  font-weight: 500 !important;
+  line-height: 150% !important;
   text-transform: none !important;
   letter-spacing: normal !important;
+  white-space: normal !important;
   word-break: normal !important;
-  overflow-wrap: anywhere !important;
-}
-[data-framer-name="Email"] a[href^="mailto:"] > * {
-  display: block !important;
-  max-width: 100% !important;
-  font: inherit !important;
-  text-transform: none !important;
-  letter-spacing: normal !important;
-  overflow-wrap: anywhere !important;
+  overflow-wrap: break-word !important;
 }
 </style>`
 
@@ -1221,10 +1209,7 @@ const FOOTER_PATCH = `
   const NEW_ADDR = '7171 Warner Ave., Ste. B, Huntington Beach, CA 92647';
   const NEW_EMAIL = 'info@nguyenarchitecture.com';
   const NEW_EMAIL_SECONDARY = 'consultant@nguyenarchitecture.com';
-  const CONSULTATION_EMAIL = NEW_EMAIL_SECONDARY;
-  // Match both old placeholder phone formats (Indonesian +62 and UAE +971).
   const PHONE_PATTERNS = ['6281234567890', '971559876543'];
-  // Match both old address formats: long tagline and short "Dubai, UAE".
   const ADDR_KEYS = ['basedarchitectureandinteriordesignstudio', 'dubai,uae', 'dubai,'];
 
   function isPhoneNode(key) {
@@ -1235,7 +1220,6 @@ const FOOTER_PATCH = `
   }
 
   function patchFooter() {
-    // Phone: match on digits so formatting differences don't break it.
     const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
     let node;
     while ((node = walker.nextNode())) {
@@ -1251,86 +1235,80 @@ const FOOTER_PATCH = `
       }
     }
 
-    // Address: match both the long tagline and the short "Dubai, UAE" placeholder.
     document.querySelectorAll('div,span,p,a,h1,h2,h3,h4,h5,h6,li').forEach((el) => {
       const text = compact(el.textContent);
       if (!isAddrEl(text)) return;
-      if (Array.from(el.children).some((c) => isAddrEl(compact(c.textContent)))) return;
+      if (Array.from(el.children).some((child) => isAddrEl(compact(child.textContent)))) return;
       if (normalize(el.textContent) !== NEW_ADDR) el.textContent = NEW_ADDR;
     });
 
-    // Copyright: replace Framer placeholder with NGUYEN ARCHITECTURE.
     document.querySelectorAll('div,span,p,li').forEach((el) => {
-      const k = compact(el.textContent || '');
-      if (k.indexOf('yourarchitecturestudio') === -1 && k.indexOf('nguyenarchitecture&engineering') === -1 && k.indexOf('nguyenarchitectureengineering') === -1) return;
-      if (Array.from(el.children).some((c) => { const ck = compact(c.textContent || ''); return ck.indexOf('yourarchitecturestudio') !== -1 || ck.indexOf('nguyenarchitecture&engineering') !== -1; })) return;
-      const curr = normalize(el.textContent || '');
-      const next = curr
+      const key = compact(el.textContent || '');
+      if (key.indexOf('yourarchitecturestudio') === -1 && key.indexOf('nguyenarchitecture&engineering') === -1 && key.indexOf('nguyenarchitectureengineering') === -1) return;
+      if (Array.from(el.children).some((child) => {
+        const childKey = compact(child.textContent || '');
+        return childKey.indexOf('yourarchitecturestudio') !== -1 || childKey.indexOf('nguyenarchitecture&engineering') !== -1;
+      })) return;
+      const current = normalize(el.textContent || '');
+      const next = current
         .replace(/Your Architecture Studio/gi, 'NGUYEN ARCHITECTURE')
-        .replace(/NGUYEN Architecture\s*&(?:amp;)?\s*Engineering/gi, 'NGUYEN ARCHITECTURE');
-      if (curr !== next) el.textContent = next;
+        .replace(/NGUYEN Architecture\\s*&(?:amp;)?\\s*Engineering/gi, 'NGUYEN ARCHITECTURE');
+      if (current !== next) el.textContent = next;
     });
 
-    // Email: fix href AND displayed text for any old placeholder address.
-    document.querySelectorAll('[data-framer-name="Email"] a[href^="mailto:"]').forEach((a) => {
-      if (!a.getAttribute('href').includes('nguyenarchitecture.com')) {
-        a.setAttribute('href', 'mailto:' + NEW_EMAIL_SECONDARY + ',' + NEW_EMAIL);
-      }
-      const displayed = (a.textContent || '').trim();
+    // Preserve Framer's original button and label layout. Only replace the label's text rows.
+    document.querySelectorAll('[data-framer-name="Email"] a[href^="mailto:"]').forEach((anchor) => {
+      anchor.setAttribute('href', 'mailto:' + NEW_EMAIL_SECONDARY + ',' + NEW_EMAIL);
+
+      // Remove layout properties added by earlier versions of this patch.
+      ['display', 'flex-direction', 'gap', 'max-width', 'min-width', 'white-space',
+       'line-height', 'color', 'text-decoration', 'font-size', 'font-weight',
+       'text-transform', 'letter-spacing', 'word-break', 'overflow-wrap'].forEach((property) => {
+        anchor.style.removeProperty(property);
+      });
+
+      const label = anchor.querySelector('[data-framer-name="Label"][data-framer-component-type="RichTextContainer"]') ||
+        anchor.querySelector('[data-framer-component-type="RichTextContainer"]');
+      if (!label) return;
+
       const consultationText = 'Consultations: ' + NEW_EMAIL_SECONDARY;
       const collaborationText = 'Collaboration: ' + NEW_EMAIL;
-      const consultationRow = a.querySelector('[data-nguyen-footer-email="consultations"]');
-      const collaborationRow = a.querySelector('[data-nguyen-footer-email="collaboration"]');
-      const needsRows = displayed && displayed.includes('@') &&
-        (!consultationRow || !collaborationRow ||
-          consultationRow.textContent !== consultationText ||
-          collaborationRow.textContent !== collaborationText);
-      if (needsRows) {
-        a.replaceChildren();
-        const consultationLine = document.createElement('span');
-        consultationLine.setAttribute('data-nguyen-footer-email', 'consultations');
-        consultationLine.textContent = consultationText;
-        const collaborationLine = document.createElement('span');
-        collaborationLine.setAttribute('data-nguyen-footer-email', 'collaboration');
-        collaborationLine.textContent = collaborationText;
-        [consultationLine, collaborationLine].forEach((line) => {
-          line.style.setProperty('display', 'block', 'important');
-          line.style.setProperty('max-width', '100%', 'important');
-          line.style.setProperty('font-family', '"Inter Display", "Inter Display Placeholder", sans-serif', 'important');
-          line.style.setProperty('font-size', '12px', 'important');
-          line.style.setProperty('font-weight', '500', 'important');
-          line.style.setProperty('line-height', '150%', 'important');
-          line.style.setProperty('text-transform', 'none', 'important');
-          line.style.setProperty('letter-spacing', 'normal', 'important');
-          line.style.setProperty('white-space', 'normal', 'important');
-          line.style.setProperty('overflow-wrap', 'anywhere', 'important');
-        });
-        a.append(consultationLine, collaborationLine);
-      }
-      a.style.setProperty('display', 'flex', 'important');
-      a.style.setProperty('flex-direction', 'column', 'important');
-      a.style.setProperty('gap', '4px', 'important');
-      a.style.setProperty('max-width', '100%', 'important');
-      a.style.setProperty('min-width', '0', 'important');
-      a.style.setProperty('white-space', 'normal', 'important');
-      a.style.setProperty('line-height', '1.5', 'important');
-      a.style.setProperty('color', 'inherit', 'important');
-      a.style.setProperty('text-decoration', 'none', 'important');
-      a.style.setProperty('font-size', '12px', 'important');
-      a.style.setProperty('font-weight', '500', 'important');
-      a.style.setProperty('text-transform', 'none', 'important');
-      a.style.setProperty('letter-spacing', 'normal', 'important');
-      a.style.setProperty('word-break', 'normal', 'important');
-      a.style.setProperty('overflow-wrap', 'anywhere', 'important');
+      const consultationRow = label.querySelector('[data-nguyen-footer-email="consultations"]');
+      const collaborationRow = label.querySelector('[data-nguyen-footer-email="collaboration"]');
+      if (consultationRow && collaborationRow &&
+          consultationRow.textContent === consultationText &&
+          collaborationRow.textContent === collaborationText) return;
+
+      const makeRow = (kind, text) => {
+        const row = document.createElement('p');
+        row.className = 'framer-text';
+        row.setAttribute('dir', 'auto');
+        row.setAttribute('data-nguyen-footer-email', kind);
+        row.textContent = text;
+        row.style.setProperty('margin', '0', 'important');
+        row.style.setProperty('font-family', '"Inter Display", "Inter Display Placeholder", sans-serif', 'important');
+        row.style.setProperty('font-size', '12px', 'important');
+        row.style.setProperty('font-weight', '500', 'important');
+        row.style.setProperty('line-height', '150%', 'important');
+        row.style.setProperty('text-transform', 'none', 'important');
+        row.style.setProperty('letter-spacing', 'normal', 'important');
+        row.style.setProperty('white-space', 'normal', 'important');
+        row.style.setProperty('word-break', 'normal', 'important');
+        row.style.setProperty('overflow-wrap', 'break-word', 'important');
+        return row;
+      };
+
+      label.replaceChildren(
+        makeRow('consultations', consultationText),
+        makeRow('collaboration', collaborationText)
+      );
     });
   }
 
   patchFooter();
   window.addEventListener('load', patchFooter, { once: true });
-  [300, 800, 1800, 3500, 6000, 10000, 20000, 40000].forEach((t) => setTimeout(patchFooter, t));
+  [300, 800, 1800, 3500, 6000, 10000, 20000, 40000].forEach((delay) => setTimeout(patchFooter, delay));
 
-  // patchFooter tree-walks every footer copy; running it on each mutation batch during a mobile scroll
-  // added up. Coalesce bursts into one delayed run — the timed passes above still cover late renders.
   let footerScheduled = false;
   const scheduleFooter = () => {
     if (footerScheduled) return;
@@ -1340,9 +1318,9 @@ const FOOTER_PATCH = `
       patchFooter();
     });
   };
-  const obs = new MutationObserver(scheduleFooter);
-  if (document.body) obs.observe(document.body, { childList: true, subtree: true, characterData: true });
-  setTimeout(() => obs.disconnect(), 60000);
+  const observer = new MutationObserver(scheduleFooter);
+  if (document.body) observer.observe(document.body, { childList: true, subtree: true, characterData: true });
+  setTimeout(() => observer.disconnect(), 60000);
 })();
 </script>`
 
