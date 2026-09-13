@@ -1570,7 +1570,7 @@ footer > .nguyen-footer-links > :is(a, button):focus-visible { text-decoration: 
     const key = link.getAttribute('data-nguyen-footer-nav');
     if (key === 'home' && url.pathname === location.pathname) {
       // Reload the clean homepage URL so Framer cannot restore the footer/hash scroll position.
-      location.assign(url.pathname);
+      location.assign(url.href);
       return;
     }
     const target = url.pathname === location.pathname && url.hash && document.getElementById(url.hash.slice(1));
@@ -1589,7 +1589,7 @@ footer > .nguyen-footer-links > :is(a, button):focus-visible { text-decoration: 
       const key = link.getAttribute('data-nguyen-footer-nav');
       if (key === 'home' && url.pathname === location.pathname) {
         // Reload the clean homepage URL so Framer cannot restore the footer/hash scroll position.
-        location.assign(url.pathname);
+        location.assign(url.href);
         return;
       }
       const target = url.pathname === location.pathname && url.hash && document.getElementById(url.hash.slice(1));
