@@ -1203,7 +1203,8 @@ const FOOTER_PATCH = `
         a.setAttribute('href', 'mailto:' + NEW_EMAIL_SECONDARY + ',' + NEW_EMAIL);
       }
       const displayed = (a.textContent || '').trim();
-      if (displayed && displayed.includes('@')) a.textContent = 'Consultations: ' + NEW_EMAIL_SECONDARY + '  ·  Collaboration: ' + NEW_EMAIL;
+      if (displayed && displayed.includes('@')) a.textContent = 'Consultations: ' + NEW_EMAIL_SECONDARY + '\\nCollaboration: ' + NEW_EMAIL;
+      a.style.setProperty('white-space', 'pre-line', 'important');
       a.style.setProperty('color', 'inherit', 'important');
       a.style.setProperty('text-decoration', 'none', 'important');
       a.style.setProperty('font-size', 'clamp(11px,1vw,13px)', 'important');
@@ -1442,7 +1443,7 @@ const ICON_BAR_PATCH = `
 (() => {
   const ROW_SELECTOR = 'footer [data-framer-name="icons-group"]';
   const CONTACTS = [
-    { key: 'email', text: 'Consultations: consultant@nguyenarchitecture.com  ·  Collaboration: info@nguyenarchitecture.com', label: 'Consultations and collaboration email', href: 'mailto:consultant@nguyenarchitecture.com,info@nguyenarchitecture.com' },
+    { key: 'email', text: 'Consultations: consultant@nguyenarchitecture.com\\nCollaboration: info@nguyenarchitecture.com', label: 'Consultations and collaboration email', href: 'mailto:consultant@nguyenarchitecture.com,info@nguyenarchitecture.com' },
     { key: 'phone', text: '(714) 707-8889', label: 'Call NGUYEN Architecture', href: 'tel:+17147078889' },
     { key: 'location', text: 'California', label: 'View NGUYEN Architecture location', href: 'https://www.google.com/maps/search/?api=1&query=California', external: true },
   ];
@@ -1485,7 +1486,10 @@ const ICON_BAR_PATCH = `
         setAttribute(item, 'role', 'link');
         setAttribute(item, 'tabindex', '0');
         setAttribute(item, 'aria-label', contact.label + ': ' + contact.text);
-        item.querySelectorAll('[data-framer-component-type="RichTextContainer"] p').forEach((label) => updateLabel(label, contact.text));
+        item.querySelectorAll('[data-framer-component-type="RichTextContainer"] p').forEach((label) => {
+          label.style.setProperty('white-space', 'pre-line', 'important');
+          updateLabel(label, contact.text);
+        });
         item.querySelectorAll('a').forEach((link) => setAttribute(link, 'href', contact.href));
       });
     });
