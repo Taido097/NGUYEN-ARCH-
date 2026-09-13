@@ -172,6 +172,7 @@ export default function ContactPage() {
                 <div className="cf-aside-block">
                   <p className="cf-aside-label">Email</p>
                   <a className="cf-aside-val cf-aside-link" href="mailto:info@nguyenarchitecture.com">info@nguyenarchitecture.com</a>
+                  <a className="cf-aside-val cf-aside-link" href="mailto:consultant@nguyenarchitecture.com">consultant@nguyenarchitecture.com</a>
                 </div>
                 <div className="cf-aside-block">
                   <p className="cf-aside-label">Hours</p>
