@@ -1,0 +1,47 @@
+import assert from 'node:assert/strict'
+import test from 'node:test'
+
+import {
+  buildContactDetails,
+  getContactRecipient,
+} from '../app/api/contact/routing.ts'
+
+test('project consultations route only to the consultant inbox', () => {
+  assert.equal(
+    getContactRecipient('consultation'),
+    'consultant@nguyenarchitecture.com',
+  )
+})
+
+test('contractor and developer collaborations route only to the info inbox', () => {
+  assert.equal(
+    getContactRecipient('collaboration'),
+    'info@nguyenarchitecture.com',
+  )
+})
+
+test('unknown inquiry types are rejected instead of accepting a client-selected recipient', () => {
+  assert.throws(
+    () => getContactRecipient('attacker@example.com'),
+    /invalid inquiry type/i,
+  )
+})
+
+test('the notification includes every project field submitted by the form', () => {
+  assert.equal(
+    buildContactDetails({
+      inquiryType: 'consultation',
+      projectType: 'Custom Home',
+      budget: '$300K – $600K',
+      message: 'A new two-story home in Huntington Beach.',
+    }),
+    [
+      'Inquiry Type: Project Consultation',
+      'Project Type: Custom Home',
+      'Budget: $300K – $600K',
+      '',
+      'Project Description:',
+      'A new two-story home in Huntington Beach.',
+    ].join('\n'),
+  )
+})
