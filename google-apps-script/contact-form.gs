@@ -1,6 +1,6 @@
 const SPREADSHEET_ID = '1yMJoyYozpwjdd5TsciXGOKTgjcqDb9vgw_zO1eCs7DE';
 const SHEET_NAME = 'Website Leads';
-const NOTIFICATION_EMAIL = 'designedbytd.studio@gmail.com';
+const NOTIFICATION_EMAIL = 'consultant@nguyenarchitecture.com,info@nguyenarchitecture.com,taido097@gmail.com';
 
 function doPost(e) {
   try {
