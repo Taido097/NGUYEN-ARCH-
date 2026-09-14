@@ -2497,6 +2497,114 @@ export async function GET() {
   for (const source of HOMEPAGE_HERO_SOURCES) html = html.split(source).join(HOMEPAGE_HERO_IMAGE)
   for (const [source, target] of HOMEPAGE_SIDE_HERO_SOURCES) html = html.split(source).join(target)
   for (const source of ENGINEERING_TITLE_SOURCES) html = html.split(source).join(ENGINEERING_TITLE)
+  const FRAMER_FORM_INTERCEPT_PATCH = `
+<script id="nguyen-framer-form-intercept">
+(() => {
+  const API = '/api/contact';
+
+  function getLabel(el) {
+    // Walk up to find the closest label or placeholder
+    let node = el;
+    for (let i = 0; i < 6 && node && node !== document.body; i++, node = node.parentElement) {
+      const label = node.querySelector?.('label, [class*="label"], [class*="Label"]');
+      if (label) return (label.textContent || '').replace(/\\*/g, '').trim().toLowerCase();
+    }
+    return (el.placeholder || el.name || el.id || '').toLowerCase();
+  }
+
+  function collectFields(form) {
+    const data = { name: '', email: '', phone: '', company: '', message: '' };
+    const extras = [];
+    form.querySelectorAll('input, textarea, select').forEach((el) => {
+      const val = (el.value || '').trim();
+      if (!val) return;
+      const label = getLabel(el);
+      if (/name/i.test(label)) { data.name = data.name || val; return; }
+      if (/email/i.test(label)) { data.email = data.email || val; return; }
+      if (/phone|mobile|tel/i.test(label)) { data.phone = data.phone || val; return; }
+      // Capture everything else as extra context (architectural type, location, scale etc.)
+      extras.push(label ? label + ': ' + val : val);
+    });
+    if (extras.length) data.message = (data.message ? data.message + '\\n' : '') + extras.join('\\n');
+    return data;
+  }
+
+  function showBanner(form, success, msg) {
+    let banner = form.querySelector('.nf-banner');
+    if (!banner) {
+      banner = document.createElement('div');
+      banner.className = 'nf-banner';
+      banner.style.cssText = 'margin-top:16px;padding:14px 18px;border-radius:6px;font-size:14px;font-weight:500;line-height:1.5;';
+      form.appendChild(banner);
+    }
+    if (success) {
+      banner.style.background = '#d4edda';
+      banner.style.color = '#155724';
+    } else {
+      banner.style.background = '#f8d7da';
+      banner.style.color = '#721c24';
+    }
+    banner.textContent = msg;
+    banner.hidden = false;
+  }
+
+  function interceptForm(form) {
+    if (form.__nguyenIntercepted) return;
+    form.__nguyenIntercepted = true;
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      e.stopImmediatePropagation();
+
+      const submit = form.querySelector('button[type="submit"], input[type="submit"], [type="submit"]');
+      const originalText = submit?.textContent || '';
+      if (submit) { submit.disabled = true; submit.textContent = 'Sending…'; }
+
+      const fields = collectFields(form);
+
+      // Basic client-side check before hitting the API
+      if (!fields.name || !fields.email || !fields.phone) {
+        showBanner(form, false, 'Please fill in your name, email, and phone number.');
+        if (submit) { submit.disabled = false; submit.textContent = originalText; }
+        return;
+      }
+      if (!fields.message) fields.message = 'Submitted via homepage form.';
+
+      try {
+        const res = await fetch(API, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(fields),
+        });
+        const json = await res.json().catch(() => ({}));
+        if (res.ok && json.success) {
+          showBanner(form, true, "Thank you — we received your inquiry and will be in touch within 1–2 business days.");
+          form.reset();
+        } else {
+          showBanner(form, false, json.error || 'Something went wrong. Please try again or call us directly.');
+        }
+      } catch {
+        showBanner(form, false, 'Something went wrong. Please try again or call us directly.');
+      } finally {
+        if (submit) { submit.disabled = false; submit.textContent = originalText; }
+      }
+    }, true);
+  }
+
+  function scan() {
+    document.querySelectorAll('form').forEach(interceptForm);
+  }
+
+  scan();
+  window.addEventListener('load', scan, { once: true });
+  [300, 800, 2000, 4000].forEach((t) => setTimeout(scan, t));
+
+  const obs = new MutationObserver(scan);
+  obs.observe(document.body, { childList: true, subtree: true });
+  setTimeout(() => obs.disconnect(), 30000);
+})();
+</script>`;
+
   html = html.split(ADU_TITLE_SPEC_SOURCE).join(ADU_TITLE_SPEC_TARGET)
   html = html.split(OLD_SERVICE_OPTIONS_HTML).join(NEW_SERVICE_OPTIONS_HTML)
   // Replace the Framer placeholder email everywhere it appears server-rendered in the HTML.
@@ -2504,7 +2612,7 @@ export async function GET() {
   // "NGUYEN", so cover both the raw and post-rebrand forms (harmless if client-rendered).
   html = html.replace(/hello@(?:arcsphere|nguyen)studio\.ae/gi, 'info@nguyenarchitecture.com')
   html = html.replace('</head>', `${FOOTER_FIRST_PAINT_STYLE}</head>`)
-  html = html.replace('</body>', `${SPLIT_TEXT_PATCH}${BRAND_PATCH}${SQUARE_IMAGES_PATCH}${SERVICES_ANCHOR_PATCH}${MAIN_NAV_PATCH}${ENGINEERING_SERVICE_PATCH}${PROJECT_CARDS_PATCH}${DESIGN_PANELS_PATCH}${RESIDENTIAL_ROW_IMAGE_PATCH}${BLUEPRINT_IMAGE_PATCH}${PROCESS_TILE_IMAGE_PATCH}${CARD_ROUTING_PATCH}${EXTRA_CARD_CLEANUP_PATCH}${SERVICE_DROPDOWN_PATCH}${PROJECT_TYPE_SECTION_PATCH}${NON_LINKING_PROJECT_PANEL_PATCH}${FOOTER_PATCH}${FOOTER_NAV_PATCH}${ICON_BAR_PATCH}${TESTIMONIAL_PATCH}${HOMEPAGE_MOBILE_HERO_CROP}${HOMEPAGE_HERO_LOCK_PATCH}${HOMEPAGE_SIDE_HERO_LOCK_PATCH}${HERO_CTA_PATCH}${HOMEPAGE_INTRO_IMAGE_SWAP_PATCH}${PAGE_VISIBILITY_GUARD_PATCH}</body>`)
+  html = html.replace('</body>', `${SPLIT_TEXT_PATCH}${BRAND_PATCH}${SQUARE_IMAGES_PATCH}${SERVICES_ANCHOR_PATCH}${MAIN_NAV_PATCH}${ENGINEERING_SERVICE_PATCH}${PROJECT_CARDS_PATCH}${DESIGN_PANELS_PATCH}${RESIDENTIAL_ROW_IMAGE_PATCH}${BLUEPRINT_IMAGE_PATCH}${PROCESS_TILE_IMAGE_PATCH}${CARD_ROUTING_PATCH}${EXTRA_CARD_CLEANUP_PATCH}${SERVICE_DROPDOWN_PATCH}${PROJECT_TYPE_SECTION_PATCH}${NON_LINKING_PROJECT_PANEL_PATCH}${FOOTER_PATCH}${FOOTER_NAV_PATCH}${ICON_BAR_PATCH}${TESTIMONIAL_PATCH}${HOMEPAGE_MOBILE_HERO_CROP}${HOMEPAGE_HERO_LOCK_PATCH}${HOMEPAGE_SIDE_HERO_LOCK_PATCH}${HERO_CTA_PATCH}${HOMEPAGE_INTRO_IMAGE_SWAP_PATCH}${PAGE_VISIBILITY_GUARD_PATCH}${FRAMER_FORM_INTERCEPT_PATCH}</body>`)
 
   const headers = new Headers(response.headers)
   headers.set('Content-Type', 'text/html; charset=utf-8')
