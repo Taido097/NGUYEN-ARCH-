@@ -2501,9 +2501,17 @@ export async function GET() {
 <script id="nguyen-framer-form-intercept">
 (() => {
   const API = '/api/contact';
+  // Compact text of Framer submit buttons (handles Framer's split-text doubling/tripling too)
+  const SUBMIT_WORDS = ['submit','send','sendmessage','sendinquiry','contactus','getstarted','getintouch','startaproject','inquirenow'];
+
+  function compact(s) { return (s || '').replace(/\\s+/g, '').toLowerCase(); }
+
+  function isSubmitText(el) {
+    const t = compact(el.textContent || '');
+    return SUBMIT_WORDS.some((w) => t === w || t === w + w || t === w + w + w);
+  }
 
   function getLabel(el) {
-    // Walk up to find the closest label or placeholder
     let node = el;
     for (let i = 0; i < 6 && node && node !== document.body; i++, node = node.parentElement) {
       const label = node.querySelector?.('label, [class*="label"], [class*="Label"]');
@@ -2522,7 +2530,6 @@ export async function GET() {
       if (/name/i.test(label)) { data.name = data.name || val; return; }
       if (/email/i.test(label)) { data.email = data.email || val; return; }
       if (/phone|mobile|tel/i.test(label)) { data.phone = data.phone || val; return; }
-      // Capture everything else as extra context (architectural type, location, scale etc.)
       extras.push(label ? label + ': ' + val : val);
     });
     if (extras.length) data.message = (data.message ? data.message + '\\n' : '') + extras.join('\\n');
@@ -2537,68 +2544,95 @@ export async function GET() {
       banner.style.cssText = 'margin-top:16px;padding:14px 18px;border-radius:6px;font-size:14px;font-weight:500;line-height:1.5;';
       form.appendChild(banner);
     }
-    if (success) {
-      banner.style.background = '#d4edda';
-      banner.style.color = '#155724';
-    } else {
-      banner.style.background = '#f8d7da';
-      banner.style.color = '#721c24';
-    }
+    banner.style.background = success ? '#d4edda' : '#f8d7da';
+    banner.style.color = success ? '#155724' : '#721c24';
     banner.textContent = msg;
     banner.hidden = false;
+  }
+
+  async function doSubmit(form) {
+    if (form.__nguyenSubmitting) return;
+    form.__nguyenSubmitting = true;
+    const fields = collectFields(form);
+    if (!fields.name || !fields.email || !fields.phone) {
+      showBanner(form, false, 'Please fill in your name, email, and phone number.');
+      form.__nguyenSubmitting = false;
+      return;
+    }
+    if (!fields.message) fields.message = 'Submitted via homepage form.';
+    try {
+      const res = await fetch(API, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(fields) });
+      const json = await res.json().catch(() => ({}));
+      if (res.ok && json.success) {
+        showBanner(form, true, 'Thank you \\u2014 we received your inquiry and will be in touch within 1\\u20132 business days.');
+        form.reset();
+      } else {
+        showBanner(form, false, json.error || 'Something went wrong. Please try again or call us directly.');
+      }
+    } catch {
+      showBanner(form, false, 'Something went wrong. Please try again or call us directly.');
+    } finally {
+      form.__nguyenSubmitting = false;
+    }
+  }
+
+  // Strict proximity check: button must be inside a <form> or a sibling/grandchild of one.
+  // This prevents intercepting standalone page CTAs that happen to match submit text.
+  function findNearestForm(el) {
+    let node = el;
+    while (node && node !== document.body) {
+      if (node.tagName === 'FORM') return node;
+      node = node.parentElement;
+    }
+    // Not inside a form — check if a form is a sibling within 2 parent levels
+    node = el;
+    for (let i = 0; i < 2; i++) {
+      if (!node || !node.parentElement) break;
+      node = node.parentElement;
+      const siblings = node.querySelectorAll(':scope > form');
+      if (siblings.length) return siblings[0];
+    }
+    return null;
   }
 
   function interceptForm(form) {
     if (form.__nguyenIntercepted) return;
     form.__nguyenIntercepted = true;
-
-    form.addEventListener('submit', async (e) => {
+    // Handle native form submit (works when Framer uses <button type="submit">)
+    form.addEventListener('submit', (e) => {
       e.preventDefault();
       e.stopImmediatePropagation();
-
-      const submit = form.querySelector('button[type="submit"], input[type="submit"], [type="submit"]');
-      const originalText = submit?.textContent || '';
-      if (submit) { submit.disabled = true; submit.textContent = 'Sending…'; }
-
-      const fields = collectFields(form);
-
-      // Basic client-side check before hitting the API
-      if (!fields.name || !fields.email || !fields.phone) {
-        showBanner(form, false, 'Please fill in your name, email, and phone number.');
-        if (submit) { submit.disabled = false; submit.textContent = originalText; }
-        return;
-      }
-      if (!fields.message) fields.message = 'Submitted via homepage form.';
-
-      try {
-        const res = await fetch(API, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(fields),
-        });
-        const json = await res.json().catch(() => ({}));
-        if (res.ok && json.success) {
-          showBanner(form, true, "Thank you — we received your inquiry and will be in touch within 1–2 business days.");
-          form.reset();
-        } else {
-          showBanner(form, false, json.error || 'Something went wrong. Please try again or call us directly.');
-        }
-      } catch {
-        showBanner(form, false, 'Something went wrong. Please try again or call us directly.');
-      } finally {
-        if (submit) { submit.disabled = false; submit.textContent = originalText; }
-      }
+      doSubmit(form);
     }, true);
   }
 
-  function scan() {
-    document.querySelectorAll('form').forEach(interceptForm);
+  // Capture-phase document click handler — registered BEFORE HERO_CTA_PATCH (injected earlier in page).
+  // Intercepts clicks on Framer div/a-based submit buttons that don't fire a native submit event.
+  // If the clicked element looks like a submit button AND is near a <form>, we handle it.
+  // If no form is nearby (standalone page CTA), we fall through to HERO_CTA_PATCH.
+  if (!window.__nguyenFormClickIntercept) {
+    window.__nguyenFormClickIntercept = true;
+    document.addEventListener('click', (e) => {
+      let walk = e.target && e.target.nodeType === Node.TEXT_NODE ? e.target.parentElement : e.target;
+      let submitEl = null;
+      for (let i = 0; i < 12 && walk && walk !== document.body; i++, walk = walk.parentElement) {
+        if (walk.nodeType !== Node.ELEMENT_NODE) continue;
+        const sameTextChild = Array.from(walk.children).some((c) => compact(c.textContent) === compact(walk.textContent || ''));
+        if (!sameTextChild && isSubmitText(walk)) { submitEl = walk; break; }
+      }
+      if (!submitEl) return;
+      const form = findNearestForm(submitEl);
+      if (!form) return; // standalone CTA — let HERO_CTA_PATCH handle it
+      e.preventDefault();
+      e.stopImmediatePropagation();
+      doSubmit(form);
+    }, true);
   }
 
+  function scan() { document.querySelectorAll('form').forEach(interceptForm); }
   scan();
   window.addEventListener('load', scan, { once: true });
   [300, 800, 2000, 4000].forEach((t) => setTimeout(scan, t));
-
   const obs = new MutationObserver(scan);
   obs.observe(document.body, { childList: true, subtree: true });
   setTimeout(() => obs.disconnect(), 30000);
@@ -2612,7 +2646,7 @@ export async function GET() {
   // "NGUYEN", so cover both the raw and post-rebrand forms (harmless if client-rendered).
   html = html.replace(/hello@(?:arcsphere|nguyen)studio\.ae/gi, 'info@nguyenarchitecture.com')
   html = html.replace('</head>', `${FOOTER_FIRST_PAINT_STYLE}</head>`)
-  html = html.replace('</body>', `${SPLIT_TEXT_PATCH}${BRAND_PATCH}${SQUARE_IMAGES_PATCH}${SERVICES_ANCHOR_PATCH}${MAIN_NAV_PATCH}${ENGINEERING_SERVICE_PATCH}${PROJECT_CARDS_PATCH}${DESIGN_PANELS_PATCH}${RESIDENTIAL_ROW_IMAGE_PATCH}${BLUEPRINT_IMAGE_PATCH}${PROCESS_TILE_IMAGE_PATCH}${CARD_ROUTING_PATCH}${EXTRA_CARD_CLEANUP_PATCH}${SERVICE_DROPDOWN_PATCH}${PROJECT_TYPE_SECTION_PATCH}${NON_LINKING_PROJECT_PANEL_PATCH}${FOOTER_PATCH}${FOOTER_NAV_PATCH}${ICON_BAR_PATCH}${TESTIMONIAL_PATCH}${HOMEPAGE_MOBILE_HERO_CROP}${HOMEPAGE_HERO_LOCK_PATCH}${HOMEPAGE_SIDE_HERO_LOCK_PATCH}${HERO_CTA_PATCH}${HOMEPAGE_INTRO_IMAGE_SWAP_PATCH}${PAGE_VISIBILITY_GUARD_PATCH}${FRAMER_FORM_INTERCEPT_PATCH}</body>`)
+  html = html.replace('</body>', `${SPLIT_TEXT_PATCH}${BRAND_PATCH}${SQUARE_IMAGES_PATCH}${SERVICES_ANCHOR_PATCH}${MAIN_NAV_PATCH}${ENGINEERING_SERVICE_PATCH}${PROJECT_CARDS_PATCH}${DESIGN_PANELS_PATCH}${RESIDENTIAL_ROW_IMAGE_PATCH}${BLUEPRINT_IMAGE_PATCH}${PROCESS_TILE_IMAGE_PATCH}${CARD_ROUTING_PATCH}${EXTRA_CARD_CLEANUP_PATCH}${SERVICE_DROPDOWN_PATCH}${PROJECT_TYPE_SECTION_PATCH}${NON_LINKING_PROJECT_PANEL_PATCH}${FOOTER_PATCH}${FOOTER_NAV_PATCH}${ICON_BAR_PATCH}${TESTIMONIAL_PATCH}${HOMEPAGE_MOBILE_HERO_CROP}${HOMEPAGE_HERO_LOCK_PATCH}${HOMEPAGE_SIDE_HERO_LOCK_PATCH}${FRAMER_FORM_INTERCEPT_PATCH}${HERO_CTA_PATCH}${HOMEPAGE_INTRO_IMAGE_SWAP_PATCH}${PAGE_VISIBILITY_GUARD_PATCH}</body>`)
 
   const headers = new Headers(response.headers)
   headers.set('Content-Type', 'text/html; charset=utf-8')
