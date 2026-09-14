@@ -2500,7 +2500,7 @@ export async function GET() {
   const FRAMER_FORM_INTERCEPT_PATCH = `
 <script id="nguyen-framer-form-intercept">
 (() => {
-  const API = '/api/contact';
+  const API = window.location.origin + '/api/contact';
   const EMAIL_RE = /^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/;
   const PHONE_RE = /^[\\d\\s()+\\-.]{7,}$/;
   // Compact button text that signals a form submit (handles Framer split-text doubling/tripling).
