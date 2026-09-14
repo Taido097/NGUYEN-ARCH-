@@ -2501,48 +2501,124 @@ export async function GET() {
 <script id="nguyen-framer-form-intercept">
 (() => {
   const API = '/api/contact';
-  // Compact text of Framer submit buttons (handles Framer's split-text doubling/tripling too)
-  const SUBMIT_WORDS = ['submit','send','sendmessage','sendinquiry','contactus','getstarted','getintouch','startaproject','inquirenow'];
+  const EMAIL_RE = /^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/;
+  const PHONE_RE = /^[\\d\\s()+\\-.]{7,}$/;
+  // Compact button text that signals a form submit (handles Framer split-text doubling/tripling).
+  const SUBMIT_WORDS = ['submit','send','sendmessage','sendinquiry','sendrequest','sendit','contactus','getstarted','getintouch','startaproject','inquirenow','requestaquote','requestconsultation','bookconsultation'];
 
   function compact(s) { return (s || '').replace(/\\s+/g, '').toLowerCase(); }
 
   function isSubmitText(el) {
     const t = compact(el.textContent || '');
+    if (!t || t.length > 40) return false;
     return SUBMIT_WORDS.some((w) => t === w || t === w + w || t === w + w + w);
+  }
+
+  // A leaf-ish submit trigger: matches text OR is an explicit submit control, and no child
+  // carries the exact same text (so we grab the innermost clickable, not a wrapper).
+  function looksLikeSubmit(el) {
+    if (el.nodeType !== Node.ELEMENT_NODE) return false;
+    const type = (el.getAttribute && (el.getAttribute('type') || '')).toLowerCase();
+    const isExplicit = type === 'submit' || (el.tagName === 'BUTTON' && !type);
+    if (!isExplicit && !isSubmitText(el)) return false;
+    const t = compact(el.textContent || '');
+    const childSameText = Array.from(el.children || []).some((c) => compact(c.textContent) === t && t);
+    return !childSameText;
   }
 
   function getLabel(el) {
     let node = el;
     for (let i = 0; i < 6 && node && node !== document.body; i++, node = node.parentElement) {
-      const label = node.querySelector?.('label, [class*="label"], [class*="Label"]');
+      const label = node.querySelector && node.querySelector('label, [class*="label"], [class*="Label"]');
       if (label) return (label.textContent || '').replace(/\\*/g, '').trim().toLowerCase();
     }
-    return (el.placeholder || el.name || el.id || '').toLowerCase();
+    return (el.placeholder || (el.getAttribute && el.getAttribute('aria-label')) || el.name || el.id || '').toLowerCase();
   }
 
-  function collectFields(form) {
-    const data = { name: '', email: '', phone: '', company: '', message: '' };
-    const extras = [];
-    form.querySelectorAll('input, textarea, select').forEach((el) => {
-      const val = (el.value || '').trim();
-      if (!val) return;
-      const label = getLabel(el);
-      if (/name/i.test(label)) { data.name = data.name || val; return; }
-      if (/email/i.test(label)) { data.email = data.email || val; return; }
-      if (/phone|mobile|tel/i.test(label)) { data.phone = data.phone || val; return; }
-      extras.push(label ? label + ': ' + val : val);
+  function fieldEls(container) {
+    return Array.from(container.querySelectorAll('input, textarea, select')).filter((el) => {
+      const t = (el.type || '').toLowerCase();
+      return t !== 'hidden' && t !== 'submit' && t !== 'button' && t !== 'checkbox' && t !== 'radio';
     });
-    if (extras.length) data.message = (data.message ? data.message + '\\n' : '') + extras.join('\\n');
+  }
+
+  // Classify by input type, value shape, then label — resilient to Framer's opaque labels.
+  function collectFields(container) {
+    const els = fieldEls(container);
+    const data = { name: '', email: '', phone: '', company: '', message: '' };
+    const used = new Set();
+
+    els.forEach((el) => {
+      const v = (el.value || '').trim();
+      if (!v || used.has(el)) return;
+      const type = (el.type || '').toLowerCase();
+      if (!data.email && (type === 'email' || EMAIL_RE.test(v))) { data.email = v; used.add(el); }
+    });
+    els.forEach((el) => {
+      const v = (el.value || '').trim();
+      if (!v || used.has(el)) return;
+      const type = (el.type || '').toLowerCase();
+      const label = getLabel(el);
+      if (!data.phone && (type === 'tel' || /phone|mobile|tel/.test(label) || PHONE_RE.test(v))) { data.phone = v; used.add(el); }
+    });
+    els.forEach((el) => {
+      const v = (el.value || '').trim();
+      if (!v || used.has(el)) return;
+      if (!data.name && /name/.test(getLabel(el))) { data.name = v; used.add(el); }
+    });
+    // Fallback: first remaining short text input becomes the name.
+    if (!data.name) {
+      for (const el of els) {
+        const v = (el.value || '').trim();
+        if (!v || used.has(el)) continue;
+        const type = (el.type || '').toLowerCase();
+        if (el.tagName === 'INPUT' && (type === 'text' || type === '') && v.length <= 80) { data.name = v; used.add(el); break; }
+      }
+    }
+    const extras = [];
+    els.forEach((el) => {
+      const v = (el.value || '').trim();
+      if (!v || used.has(el)) return;
+      const label = getLabel(el);
+      extras.push(label ? label + ': ' + v : v);
+    });
+    if (extras.length) data.message = extras.join('\\n');
     return data;
   }
 
-  function showBanner(form, success, msg) {
-    let banner = form.querySelector('.nf-banner');
+  // Locate the contact-form container (real <form> OR Framer <div>) by finding the
+  // smallest ancestor that holds an email field plus a name or phone field.
+  function containerFrom(startEl) {
+    let node = startEl;
+    for (let i = 0; i < 12 && node && node !== document.body; i++, node = node.parentElement) {
+      const els = fieldEls(node);
+      if (els.length < 2) continue;
+      const hasEmail = els.some((el) => (el.type || '').toLowerCase() === 'email' || /email/.test(getLabel(el)));
+      const hasNameOrPhone = els.some((el) => {
+        const t = (el.type || '').toLowerCase();
+        return t === 'tel' || /name|phone|mobile|tel/.test(getLabel(el));
+      });
+      if (hasEmail || (els.length >= 2 && hasNameOrPhone)) {
+        return node.closest && node.closest('form') || node;
+      }
+    }
+    return null;
+  }
+
+  function anyFormContainer() {
+    const form = document.querySelector('form');
+    if (form) return form;
+    const email = Array.from(document.querySelectorAll('input')).find((el) => (el.type || '').toLowerCase() === 'email' || /email/.test(getLabel(el)));
+    return email ? containerFrom(email) : null;
+  }
+
+  function showBanner(container, success, msg) {
+    let banner = container.querySelector('.nf-banner');
     if (!banner) {
       banner = document.createElement('div');
       banner.className = 'nf-banner';
       banner.style.cssText = 'margin-top:16px;padding:14px 18px;border-radius:6px;font-size:14px;font-weight:500;line-height:1.5;';
-      form.appendChild(banner);
+      container.appendChild(banner);
     }
     banner.style.background = success ? '#d4edda' : '#f8d7da';
     banner.style.color = success ? '#155724' : '#721c24';
@@ -2550,13 +2626,18 @@ export async function GET() {
     banner.hidden = false;
   }
 
-  async function doSubmit(form) {
-    if (form.__nguyenSubmitting) return;
-    form.__nguyenSubmitting = true;
-    const fields = collectFields(form);
+  function resetContainer(container) {
+    if (typeof container.reset === 'function') { try { container.reset(); return; } catch (e) {} }
+    fieldEls(container).forEach((el) => { try { el.value = ''; } catch (e) {} });
+  }
+
+  async function doSubmit(container) {
+    if (!container || container.__nguyenSubmitting) return;
+    container.__nguyenSubmitting = true;
+    const fields = collectFields(container);
     if (!fields.name || !fields.email || !fields.phone) {
-      showBanner(form, false, 'Please fill in your name, email, and phone number.');
-      form.__nguyenSubmitting = false;
+      showBanner(container, false, 'Please fill in your name, email, and phone number.');
+      container.__nguyenSubmitting = false;
       return;
     }
     if (!fields.message) fields.message = 'Submitted via homepage form.';
@@ -2564,41 +2645,22 @@ export async function GET() {
       const res = await fetch(API, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(fields) });
       const json = await res.json().catch(() => ({}));
       if (res.ok && json.success) {
-        showBanner(form, true, 'Thank you \\u2014 we received your inquiry and will be in touch within 1\\u20132 business days.');
-        form.reset();
+        showBanner(container, true, 'Thank you \\u2014 we received your inquiry and will be in touch within 1\\u20132 business days.');
+        resetContainer(container);
       } else {
-        showBanner(form, false, json.error || 'Something went wrong. Please try again or call us directly.');
+        showBanner(container, false, json.error || 'Something went wrong. Please try again or call us directly.');
       }
-    } catch {
-      showBanner(form, false, 'Something went wrong. Please try again or call us directly.');
+    } catch (e) {
+      showBanner(container, false, 'Something went wrong. Please try again or call us directly.');
     } finally {
-      form.__nguyenSubmitting = false;
+      container.__nguyenSubmitting = false;
     }
   }
 
-  // Strict proximity check: button must be inside a <form> or a sibling/grandchild of one.
-  // This prevents intercepting standalone page CTAs that happen to match submit text.
-  function findNearestForm(el) {
-    let node = el;
-    while (node && node !== document.body) {
-      if (node.tagName === 'FORM') return node;
-      node = node.parentElement;
-    }
-    // Not inside a form — check if a form is a sibling within 2 parent levels
-    node = el;
-    for (let i = 0; i < 2; i++) {
-      if (!node || !node.parentElement) break;
-      node = node.parentElement;
-      const siblings = node.querySelectorAll(':scope > form');
-      if (siblings.length) return siblings[0];
-    }
-    return null;
-  }
-
+  // Attach a native submit listener to any real <form> (covers <button type="submit">).
   function interceptForm(form) {
     if (form.__nguyenIntercepted) return;
     form.__nguyenIntercepted = true;
-    // Handle native form submit (works when Framer uses <button type="submit">)
     form.addEventListener('submit', (e) => {
       e.preventDefault();
       e.stopImmediatePropagation();
@@ -2606,26 +2668,24 @@ export async function GET() {
     }, true);
   }
 
-  // Capture-phase document click handler — registered BEFORE HERO_CTA_PATCH (injected earlier in page).
-  // Intercepts clicks on Framer div/a-based submit buttons that don't fire a native submit event.
-  // If the clicked element looks like a submit button AND is near a <form>, we handle it.
-  // If no form is nearby (standalone page CTA), we fall through to HERO_CTA_PATCH.
+  // Capture-phase document click handler — registered BEFORE HERO_CTA_PATCH (injected earlier).
+  // Catches clicks on Framer div/button/anchor submit triggers that never fire a native submit.
+  // Only fires when a field-bearing form container is found near the trigger; otherwise falls
+  // through so standalone page CTAs still route to the contact page via HERO_CTA_PATCH.
   if (!window.__nguyenFormClickIntercept) {
     window.__nguyenFormClickIntercept = true;
     document.addEventListener('click', (e) => {
       let walk = e.target && e.target.nodeType === Node.TEXT_NODE ? e.target.parentElement : e.target;
       let submitEl = null;
       for (let i = 0; i < 12 && walk && walk !== document.body; i++, walk = walk.parentElement) {
-        if (walk.nodeType !== Node.ELEMENT_NODE) continue;
-        const sameTextChild = Array.from(walk.children).some((c) => compact(c.textContent) === compact(walk.textContent || ''));
-        if (!sameTextChild && isSubmitText(walk)) { submitEl = walk; break; }
+        if (looksLikeSubmit(walk)) { submitEl = walk; break; }
       }
       if (!submitEl) return;
-      const form = findNearestForm(submitEl);
-      if (!form) return; // standalone CTA — let HERO_CTA_PATCH handle it
+      const container = containerFrom(submitEl);
+      if (!container) return; // no nearby form fields — let HERO_CTA_PATCH handle it
       e.preventDefault();
       e.stopImmediatePropagation();
-      doSubmit(form);
+      doSubmit(container);
     }, true);
   }
 
@@ -2634,7 +2694,7 @@ export async function GET() {
   window.addEventListener('load', scan, { once: true });
   [300, 800, 2000, 4000].forEach((t) => setTimeout(scan, t));
   const obs = new MutationObserver(scan);
-  obs.observe(document.body, { childList: true, subtree: true });
+  if (document.body) obs.observe(document.body, { childList: true, subtree: true });
   setTimeout(() => obs.disconnect(), 30000);
 })();
 </script>`;
