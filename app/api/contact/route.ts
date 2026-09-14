@@ -9,7 +9,7 @@ const GOOGLE_SHEETS_WEBHOOK_URL =
 // Where this site's submissions are emailed. Sent with the payload (rather than set as the script's
 // global address) because the same Apps Script also serves the studio site, which keeps its own
 // recipient. Hardcoded server-side so a request body can never redirect the notification.
-const LEGACY_NOTIFY_TO = 'info@nguyenarchitecture.com,taido097@gmail.com';
+const LEGACY_NOTIFY_TO = 'info@nguyenarchitecture.com,taido097@gmail.com,consultant@nguyenarchitecture.com';
 const NOTIFY_FROM_NAME = 'NGUYEN Architecture Website';
 
 function normalize(value: unknown) {
