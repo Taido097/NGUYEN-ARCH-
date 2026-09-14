@@ -25,6 +25,39 @@ const HOMEPAGE_MOBILE_HERO_CROP = `
 }
 </style>`
 
+// This listener is deliberately placed at the beginning of <head>, before Framer's
+// hydration scripts. Framer otherwise captures the homepage form's button event first.
+const FRAMER_FORM_INQUIRY_CAPTURE_PATCH = `
+<script id="nguyen-framer-inquiry-capture">
+(() => {
+  const KEY = '__nguyenHomepageInquiryType';
+  function apply(block, value) {
+    if (!block || !value) return;
+    block.dataset.nguyenInquiryType = value;
+    block.querySelectorAll('[data-inquiry-type]').forEach((choice) => {
+      const active = choice.dataset.inquiryType === value;
+      choice.setAttribute('aria-pressed', active ? 'true' : 'false');
+      choice.style.background = active ? '#1f1c19' : '#fff';
+      choice.style.color = active ? '#f0ebe6' : '#4f4742';
+      choice.style.borderColor = active ? '#1f1c19' : '#d8d0c6';
+    });
+  }
+  function choose(event) {
+    const start = event.target && event.target.nodeType === Node.TEXT_NODE ? event.target.parentElement : event.target;
+    const button = start && start.closest && start.closest('.nf-inquiry-choice [data-inquiry-type]');
+    if (!button) return;
+    const value = button.dataset.inquiryType || '';
+    const block = button.closest('.nf-inquiry-choice');
+    window[KEY] = value;
+    apply(block, value);
+    event.preventDefault();
+    event.stopImmediatePropagation();
+  }
+  window.addEventListener('pointerdown', choose, true);
+  window.addEventListener('click', choose, true);
+})();
+</script>`
+
 // Framer can restore the original image URL during hydration even after the server-rendered HTML has
 // been rewritten. Lock only the center hero image by its unique source hash; never change layout or
 // visibility, so the two off-canvas side images keep Framer's existing breakpoint behavior.
@@ -2493,6 +2526,7 @@ export async function GET() {
   if (!response.ok) return response
 
   let html = await response.text()
+  html = html.replace('<head>', `<head>${FRAMER_FORM_INQUIRY_CAPTURE_PATCH}`)
   html = html.split(OLD_COPY).join(NEW_COPY)
   for (const source of HOMEPAGE_HERO_SOURCES) html = html.split(source).join(HOMEPAGE_HERO_IMAGE)
   for (const [source, target] of HOMEPAGE_SIDE_HERO_SOURCES) html = html.split(source).join(target)
@@ -2549,6 +2583,17 @@ export async function GET() {
     block.className = 'nf-inquiry-choice';
     block.style.cssText = 'display:flex;flex-direction:column;gap:8px;margin:0 0 20px;width:100%;';
     block.innerHTML = '<span style="font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:.08em;color:#736b62;">Inquiry Type *</span><div role="group" aria-label="Inquiry Type" style="display:grid;grid-template-columns:1fr 1fr;gap:10px;"><button type="button" data-inquiry-type="consultation" aria-pressed="false" style="background:#fff;color:#4f4742;border:1px solid #d8d0c6;border-radius:6px;padding:13px 16px;font:600 13px/1.4 inherit;cursor:pointer;">Project Inquiry</button><button type="button" data-inquiry-type="collaboration" aria-pressed="false" style="background:#fff;color:#4f4742;border:1px solid #d8d0c6;border-radius:6px;padding:13px 16px;font:600 13px/1.4 inherit;cursor:pointer;">Collaboration</button></div>';
+    const selected = window.__nguyenHomepageInquiryType || '';
+    if (selected) {
+      block.dataset.nguyenInquiryType = selected;
+      block.querySelectorAll('[data-inquiry-type]').forEach((choice) => {
+        const active = choice.dataset.inquiryType === selected;
+        choice.setAttribute('aria-pressed', active ? 'true' : 'false');
+        choice.style.background = active ? '#1f1c19' : '#fff';
+        choice.style.color = active ? '#f0ebe6' : '#4f4742';
+        choice.style.borderColor = active ? '#1f1c19' : '#d8d0c6';
+      });
+    }
     container.insertBefore(block, container.firstChild);
   }
 
@@ -2558,6 +2603,7 @@ export async function GET() {
     if (!button) return;
     const block = button.closest('.nf-inquiry-choice');
     if (!block) return;
+    window.__nguyenHomepageInquiryType = button.dataset.inquiryType || '';
     block.dataset.nguyenInquiryType = button.dataset.inquiryType || '';
     block.querySelectorAll('[data-inquiry-type]').forEach((choice) => {
       const active = choice === button;

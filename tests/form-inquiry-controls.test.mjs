@@ -26,6 +26,8 @@ test('homepage form injects the same two inquiry buttons and stores one selectio
   assert.match(homepageRoute, /data-inquiry-type="collaboration"/)
   assert.match(homepageRoute, /dataset\.nguyenInquiryType/)
   assert.match(homepageRoute, /window\.addEventListener\('pointerdown', selectInquiry, true\)/)
+  assert.match(homepageRoute, /const FRAMER_FORM_INQUIRY_CAPTURE_PATCH/)
+  assert.match(homepageRoute, /html = html\.replace\('<head>', `<head>\$\{FRAMER_FORM_INQUIRY_CAPTURE_PATCH}`\)/)
 })
 
 test('homepage sends the selected service as one projectType value', () => {
