@@ -1512,7 +1512,9 @@ footer > .nguyen-footer-links > :is(a, button):focus-visible { text-decoration: 
     footer.querySelectorAll('a').forEach((el) => {
       if (el.closest('.nguyen-footer-links')) return;
       const label = compact(el.textContent);
-      if (REMOVED_FOOTER_LABELS.includes(label)) {
+      const removedLabel = REMOVED_FOOTER_LABELS.some((item) =>
+        label === item || Array.from(el.querySelectorAll('p')).some((node) => compact(node.textContent) === item));
+      if (removedLabel) {
         el.setAttribute('data-nguyen-removed-footer-link', 'true');
         el.setAttribute('aria-hidden', 'true');
         el.setAttribute('inert', '');
