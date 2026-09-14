@@ -1525,8 +1525,8 @@ footer > .nguyen-footer-links > :is(a, button):focus-visible { text-decoration: 
         nav.className = 'nguyen-footer-links';
         nav.setAttribute('aria-label', 'Footer navigation');
         ['home', 'services', 'projects', 'process', 'contact'].forEach((key) => {
-          const link = document.createElement('button');
-          link.type = 'button';
+          const link = document.createElement('a');
+          link.href = destinations[key];
           link.textContent = key.toUpperCase();
           link.setAttribute('data-nguyen-footer-href', destinations[key]);
           link.setAttribute('data-nguyen-footer-nav', key);
@@ -1562,6 +1562,22 @@ footer > .nguyen-footer-links > :is(a, button):focus-visible { text-decoration: 
       section.style.scrollMarginTop = '90px';
     }
   }
+  function settleFooterHashTarget() {
+    const id = decodeURIComponent((window.location.hash || '').slice(1));
+    if (!['services', 'featured-projects', 'process'].includes(id)) return;
+    let attempts = 0;
+    const seek = () => {
+      const target = document.getElementById(id);
+      if (target) {
+        target.scrollIntoView({ block: 'start' });
+        return;
+      }
+      attempts += 1;
+      if (attempts < 50) setTimeout(seek, 100);
+    };
+    seek();
+  }
+
   // Route on pointerdown before Framer's older window-level click handler can swallow
   // the interaction or reroute SERVICES to the ADU page. Pointer events cover touch and mouse.
   window.addEventListener('pointerdown', (event) => {
@@ -1616,7 +1632,11 @@ footer > .nguyen-footer-links > :is(a, button):focus-visible { text-decoration: 
     location.href = destinations.contact;
   }, true);
   patchFooterNav();
-  window.addEventListener('load', patchFooterNav, { once: true });
+  settleFooterHashTarget();
+  window.addEventListener('load', () => {
+    patchFooterNav();
+    settleFooterHashTarget();
+  }, { once: true });
   window.addEventListener('resize', patchFooterNav);
   [300, 800, 1800, 3500, 6000, 10000].forEach((delay) => setTimeout(patchFooterNav, delay));
   // patchFooterNav walks every footer's whole subtree and reads layout (getBoundingClientRect), so
