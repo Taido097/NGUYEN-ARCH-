@@ -1687,6 +1687,60 @@ footer > .nguyen-footer-links > :is(a, button):focus-visible { text-decoration: 
 const ICON_BAR_PATCH = `
 <style id="nguyen-socal-mobile-contact-layout">
 [data-nguyen-mobile-contact-label] { display: none; }
+@media (min-width: 810px) {
+  footer [data-framer-name="icons-group"] {
+    display: flex !important;
+    align-items: center !important;
+    gap: 18px !important;
+    width: min(820px, calc(100vw - 64px)) !important;
+    height: auto !important;
+    overflow: visible !important;
+  }
+  footer [data-framer-name="icons-group"] > [data-nguyen-footer-contact-wrap] {
+    display: block !important;
+    flex: 0 1 auto !important;
+    width: auto !important;
+    height: auto !important;
+    min-width: 0 !important;
+    overflow: visible !important;
+  }
+  footer [data-framer-name="icons-group"] > :not([data-nguyen-footer-contact-wrap]) {
+    display: none !important;
+  }
+  footer [data-nguyen-footer-contact] {
+    display: flex !important;
+    flex-direction: row !important;
+    align-items: center !important;
+    gap: 12px !important;
+    width: auto !important;
+    height: auto !important;
+    min-width: 0 !important;
+    min-height: 48px !important;
+    overflow: visible !important;
+    padding: 0 !important;
+  }
+  footer [data-nguyen-footer-contact] > :not(:first-child):not([data-nguyen-mobile-contact-label]) {
+    display: none !important;
+  }
+  footer [data-nguyen-mobile-contact-label] {
+    display: flex !important;
+    flex: 0 1 auto !important;
+    flex-direction: column !important;
+    min-width: 0 !important;
+    max-width: 390px !important;
+    color: rgb(76, 68, 63) !important;
+    font: 500 12px/1.5 "Inter Display", "Inter Display Placeholder", sans-serif !important;
+    letter-spacing: normal !important;
+    text-transform: none !important;
+    white-space: normal !important;
+    overflow-wrap: break-word !important;
+    word-break: normal !important;
+  }
+  footer [data-nguyen-mobile-contact-label] > span {
+    display: block !important;
+    max-width: 100% !important;
+  }
+}
 @media (max-width: 809px) {
   footer [data-framer-name="icons-group"] {
     display: flex !important;
