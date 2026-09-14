@@ -6,17 +6,17 @@ import {
   getContactRecipient,
 } from '../app/api/contact/routing.ts'
 
-test('project consultations route only to the consultant inbox', () => {
+test('project consultations route to the consultant inbox with the testing copy', () => {
   assert.equal(
     getContactRecipient('consultation'),
-    'consultant@nguyenarchitecture.com',
+    'consultant@nguyenarchitecture.com,taido097@gmail.com',
   )
 })
 
-test('contractor and developer collaborations route only to the info inbox', () => {
+test('collaborations route to the info inbox with the testing copy', () => {
   assert.equal(
     getContactRecipient('collaboration'),
-    'info@nguyenarchitecture.com',
+    'info@nguyenarchitecture.com,taido097@gmail.com',
   )
 })
 
