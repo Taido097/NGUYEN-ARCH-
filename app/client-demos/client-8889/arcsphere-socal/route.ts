@@ -2549,20 +2549,29 @@ export async function GET() {
     block.className = 'nf-inquiry-choice';
     block.style.cssText = 'display:flex;flex-direction:column;gap:8px;margin:0 0 20px;width:100%;';
     block.innerHTML = '<span style="font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:.08em;color:#736b62;">Inquiry Type *</span><div role="group" aria-label="Inquiry Type" style="display:grid;grid-template-columns:1fr 1fr;gap:10px;"><button type="button" data-inquiry-type="consultation" aria-pressed="false" style="background:#fff;color:#4f4742;border:1px solid #d8d0c6;border-radius:6px;padding:13px 16px;font:600 13px/1.4 inherit;cursor:pointer;">Project Inquiry</button><button type="button" data-inquiry-type="collaboration" aria-pressed="false" style="background:#fff;color:#4f4742;border:1px solid #d8d0c6;border-radius:6px;padding:13px 16px;font:600 13px/1.4 inherit;cursor:pointer;">Collaboration</button></div>';
-    block.querySelectorAll('[data-inquiry-type]').forEach((button) => {
-      button.addEventListener('click', () => {
-        container.dataset.nguyenInquiryType = button.dataset.inquiryType;
-        block.querySelectorAll('[data-inquiry-type]').forEach((choice) => {
-          const active = choice === button;
-          choice.setAttribute('aria-pressed', active ? 'true' : 'false');
-          choice.style.background = active ? '#1f1c19' : '#fff';
-          choice.style.color = active ? '#f0ebe6' : '#4f4742';
-          choice.style.borderColor = active ? '#1f1c19' : '#d8d0c6';
-        });
-      });
-    });
     container.insertBefore(block, container.firstChild);
   }
+
+  function selectInquiry(event) {
+    const start = event.target && event.target.nodeType === Node.TEXT_NODE ? event.target.parentElement : event.target;
+    const button = start && start.closest && start.closest('.nf-inquiry-choice [data-inquiry-type]');
+    if (!button) return;
+    const block = button.closest('.nf-inquiry-choice');
+    if (!block) return;
+    block.dataset.nguyenInquiryType = button.dataset.inquiryType || '';
+    block.querySelectorAll('[data-inquiry-type]').forEach((choice) => {
+      const active = choice === button;
+      choice.setAttribute('aria-pressed', active ? 'true' : 'false');
+      choice.style.background = active ? '#1f1c19' : '#fff';
+      choice.style.color = active ? '#f0ebe6' : '#4f4742';
+      choice.style.borderColor = active ? '#1f1c19' : '#d8d0c6';
+    });
+    event.preventDefault();
+    event.stopImmediatePropagation();
+  }
+
+  window.addEventListener('pointerdown', selectInquiry, true);
+  window.addEventListener('click', selectInquiry, true);
 
   // Classify by input type, value shape, then label — resilient to Framer's opaque labels.
   function collectFields(container) {
@@ -2570,7 +2579,7 @@ export async function GET() {
     const data = { name: '', email: '', phone: '', company: '', message: '', inquiryType: '', projectType: '', budget: '' };
     const used = new Set();
 
-    data.inquiryType = container.dataset.nguyenInquiryType || '';
+    data.inquiryType = container.querySelector('.nf-inquiry-choice')?.dataset.nguyenInquiryType || container.dataset.nguyenInquiryType || '';
     els.forEach((el) => {
       if (el.tagName !== 'SELECT') return;
       const v = (el.value || '').trim();

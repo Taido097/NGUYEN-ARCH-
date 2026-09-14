@@ -25,11 +25,12 @@ test('homepage form injects the same two inquiry buttons and stores one selectio
   assert.match(homepageRoute, /data-inquiry-type="consultation"/)
   assert.match(homepageRoute, /data-inquiry-type="collaboration"/)
   assert.match(homepageRoute, /dataset\.nguyenInquiryType/)
+  assert.match(homepageRoute, /window\.addEventListener\('pointerdown', selectInquiry, true\)/)
 })
 
 test('homepage sends the selected service as one projectType value', () => {
   assert.match(homepageRoute, /data\.projectType\s*=\s*v/)
-  assert.match(homepageRoute, /data\.inquiryType\s*=\s*container\.dataset\.nguyenInquiryType/)
+  assert.match(homepageRoute, /data\.inquiryType\s*=\s*container\.querySelector\('\.nf-inquiry-choice'\)/)
 })
 
 test('API forwards structured selection fields to the client Apps Script', () => {
