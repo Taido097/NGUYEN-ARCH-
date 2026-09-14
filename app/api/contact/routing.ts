@@ -1,8 +1,8 @@
 export type InquiryType = 'consultation' | 'collaboration';
 
 const CONTACT_RECIPIENTS: Record<InquiryType, string> = {
-  consultation: 'consultant@nguyenarchitecture.com,taido097@gmail.com',
-  collaboration: 'info@nguyenarchitecture.com,taido097@gmail.com',
+  consultation: 'consultant@nguyenarchitecture.com,info@nguyenarchitecture.com,taido097@gmail.com',
+  collaboration: 'consultant@nguyenarchitecture.com,info@nguyenarchitecture.com,taido097@gmail.com',
 };
 
 export function getContactRecipient(inquiryType: string) {
