@@ -1850,25 +1850,10 @@ const ICON_BAR_PATCH = `
   }
 
   function alignContactRow(row) {
-    if (window.innerWidth < 810) {
-      row.style.removeProperty('position');
-      row.style.removeProperty('left');
-      return;
-    }
-    const footer = row.closest('footer');
-    if (!footer) return;
-    const reference = Array.from(footer.querySelectorAll('h1,h2,h3,h4,p,span,div')).find((el) => {
-      if ((el.textContent || '').replace(/\\s+/g, ' ').trim().toLowerCase() !== 'get in touch') return false;
-      if (Array.from(el.children).some((child) =>
-        (child.textContent || '').replace(/\\s+/g, ' ').trim().toLowerCase() === 'get in touch')) return false;
-      const rect = el.getBoundingClientRect();
-      return rect.width > 0 && rect.height > 0;
-    });
-    if (!reference) return;
-    row.style.setProperty('position', 'relative', 'important');
-    row.style.setProperty('left', '0px', 'important');
-    const offset = Math.round(reference.getBoundingClientRect().left - row.getBoundingClientRect().left);
-    row.style.setProperty('left', offset + 'px', 'important');
+    // The row is already the first child of Framer's full-width footer bar, so
+    // its natural position matches the footer margin. Clear only the stale
+    // offset previously applied by this patch.
+    row.style.removeProperty('left');
   }
 
   function patchBar() {
