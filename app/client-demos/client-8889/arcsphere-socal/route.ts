@@ -1691,6 +1691,7 @@ const ICON_BAR_PATCH = `
   footer [data-framer-name="icons-group"] {
     display: flex !important;
     align-items: center !important;
+    justify-content: flex-start !important;
     gap: 18px !important;
     width: min(820px, calc(100vw - 64px)) !important;
     height: auto !important;
