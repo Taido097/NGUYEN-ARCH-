@@ -5,7 +5,10 @@ import Navbar from '../services/navbar';
 
 export default function ContactPage() {
   const [submitted, setSubmitted] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState('');
   const [fields, setFields] = useState({
+    inquiryType: '',
     name: '',
     email: '',
     phone: '',
@@ -18,20 +21,33 @@ export default function ContactPage() {
     setFields((prev) => ({ ...prev, [e.target.name]: e.target.value }));
   }
 
-  function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    const body = [
-      `Name: ${fields.name}`,
-      `Email: ${fields.email}`,
-      `Phone: ${fields.phone}`,
-      `Project Type: ${fields.projectType}`,
-      `Budget: ${fields.budget}`,
-      '',
-      `Message:`,
-      fields.message,
-    ].join('\n');
-    window.location.href = `mailto:consultant@nguyenarchitecture.com?subject=Project Inquiry — ${encodeURIComponent(fields.name)}&body=${encodeURIComponent(body)}`;
-    setSubmitted(true);
+    setSubmitting(true);
+    setError('');
+
+    try {
+      const response = await fetch('/api/contact', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(fields),
+      });
+      const result = (await response.json()) as {
+        success?: boolean;
+        error?: string;
+      };
+
+      if (!response.ok || result.success !== true) {
+        setError(result.error || 'Your message could not be sent. Please try again.');
+        return;
+      }
+
+      setSubmitted(true);
+    } catch {
+      setError('Your message could not be sent. Please try again.');
+    } finally {
+      setSubmitting(false);
+    }
   }
 
   return (
@@ -55,7 +71,22 @@ export default function ContactPage() {
             </div>
 
             <div className="cf-body">
-              <form className="cf-form" onSubmit={handleSubmit} noValidate>
+              <form className="cf-form" onSubmit={handleSubmit}>
+                <label className="cf-field">
+                  <span className="cf-label">Inquiry Type <span className="cf-req">*</span></span>
+                  <select
+                    className="cf-input cf-select"
+                    name="inquiryType"
+                    value={fields.inquiryType}
+                    onChange={handleChange}
+                    required
+                  >
+                    <option value="">Select an inquiry type…</option>
+                    <option value="consultation">Project Consultation</option>
+                    <option value="collaboration">Contractor / Developer Collaboration</option>
+                  </select>
+                </label>
+
                 <div className="cf-row">
                   <label className="cf-field">
                     <span className="cf-label">Full Name <span className="cf-req">*</span></span>
@@ -87,7 +118,7 @@ export default function ContactPage() {
 
                 <div className="cf-row">
                   <label className="cf-field">
-                    <span className="cf-label">Phone Number</span>
+                    <span className="cf-label">Phone Number <span className="cf-req">*</span></span>
                     <input
                       className="cf-input"
                       type="tel"
@@ -95,6 +126,7 @@ export default function ContactPage() {
                       value={fields.phone}
                       onChange={handleChange}
                       placeholder="(714) 000-0000"
+                      required
                       autoComplete="tel"
                     />
                   </label>
@@ -151,8 +183,10 @@ export default function ContactPage() {
                   />
                 </label>
 
-                <button className="cf-submit" type="submit">
-                  Send Inquiry
+                {error ? <p className="cf-error" role="alert">{error}</p> : null}
+
+                <button className="cf-submit" type="submit" disabled={submitting}>
+                  {submitting ? 'Sending…' : 'Send Inquiry'}
                   <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
                     <path d="M3 8h10M9 4l4 4-4 4" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/>
                   </svg>
@@ -263,6 +297,8 @@ const CSS = `
   cursor:pointer;transition:opacity .2s;align-self:flex-start;
 }
 .cf-submit:hover{opacity:.8}
+.cf-submit:disabled{opacity:.55;cursor:wait}
+.cf-error{margin:0;color:#a0392a;font-size:14px;line-height:1.5}
 
 /* ── aside ── */
 .cf-aside{display:flex;flex-direction:column;gap:32px;padding-top:6px;min-width:0;width:100%}
