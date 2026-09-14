@@ -36,6 +36,10 @@ test('homepage sends the selected service as one projectType value', () => {
 })
 
 test('API forwards structured selection fields to the client Apps Script', () => {
+  assert.match(
+    apiRoute,
+    /AKfycbxINK0_TdSjvn5yJI_cdbG-m24MBcPFRRynVDX_bY2m3leSCTCZshZ5h6j0vJ9ruVse/,
+  )
   assert.match(apiRoute, /inquiryType,\s*projectType,\s*budget,/)
   assert.match(apiRoute, /company,\s*message,\s*inquiryType,/)
   assert.doesNotMatch(apiRoute, /message:\s*notificationMessage/)

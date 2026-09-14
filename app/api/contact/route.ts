@@ -4,7 +4,7 @@ import { getContactRecipient } from './routing';
 export const runtime = 'nodejs';
 
 const GOOGLE_SHEETS_WEBHOOK_URL =
-  'https://script.google.com/macros/s/AKfycbxHDrevJjnpWcPEx3Vykh0qgOAFrIpbBCp0licKO4U6-CJPUcMaWsMjj0lr8W4Wv9Nt/exec';
+  'https://script.google.com/macros/s/AKfycbxINK0_TdSjvn5yJI_cdbG-m24MBcPFRRynVDX_bY2m3leSCTCZshZ5h6j0vJ9ruVse/exec';
 
 const NOTIFY_FROM_NAME = 'NGUYEN Architecture Website';
 
