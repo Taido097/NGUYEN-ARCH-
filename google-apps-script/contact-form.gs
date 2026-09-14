@@ -53,19 +53,19 @@ function doPost(e) {
     MailApp.sendEmail({
       to: notifyTo,
       replyTo: email,
-      subject: `New website request from ${name}`,
+      subject: `New architecture project inquiry from ${name}`,
       body: [
         `Name: ${name}`,
         `Email: ${email}`,
         `Phone: ${phone}`,
-        `Business: ${company}`,
+        `Business / Project: ${company}`,
         '',
         'Project details:',
         message,
         '',
-        'This lead was also saved in your Google Sheet.',
+        'This inquiry was also saved in your Google Sheet.',
       ].join('\n'),
-      htmlBody: buildEmailHtml(name, email, phone, company, message),
+      htmlBody: buildEmailHtml(name, email, phone, company, message, notifyFromName),
       name: notifyFromName,
     });
 
@@ -133,27 +133,28 @@ function escapeHtml(value) {
     .replace(/'/g, '&#039;');
 }
 
-function buildEmailHtml(name, email, phone, company, message) {
+function buildEmailHtml(name, email, phone, company, message, senderName) {
   const safeName = escapeHtml(name);
   const safeEmail = escapeHtml(email);
   const safePhone = escapeHtml(phone);
   const safeCompany = escapeHtml(company);
   const safeMessage = escapeHtml(message).replace(/\n/g, '<br>');
+  const safeSender = escapeHtml(senderName || 'NGUYEN Architecture');
 
   return `
     <div style="font-family:Arial,sans-serif;line-height:1.6;color:#171717;max-width:640px;margin:0 auto;">
       <div style="background:#111;color:#fff;padding:24px 28px;">
-        <p style="margin:0;font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:#bdbdbd;">DesignedbyTD Studio</p>
-        <h1 style="margin:8px 0 0;font-size:26px;">New website request</h1>
+        <p style="margin:0;font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:#bdbdbd;">${safeSender}</p>
+        <h1 style="margin:8px 0 0;font-size:26px;">New architecture project inquiry</h1>
       </div>
       <div style="border:1px solid #e5e5e5;border-top:0;padding:28px;">
         <p><strong>Name:</strong> ${safeName}</p>
         <p><strong>Email:</strong> <a href="mailto:${safeEmail}">${safeEmail}</a></p>
         <p><strong>Phone:</strong> <a href="tel:${safePhone}">${safePhone}</a></p>
-        <p><strong>Business:</strong> ${safeCompany}</p>
+        <p><strong>Business / Project:</strong> ${safeCompany}</p>
         <p style="margin-top:24px;"><strong>Project details:</strong></p>
         <div style="background:#f7f7f7;border:1px solid #ececec;padding:18px;">${safeMessage}</div>
-        <p style="margin-top:24px;color:#737373;font-size:13px;">Reply to this email to contact ${safeName}. The lead is saved in Google Sheets.</p>
+        <p style="margin-top:24px;color:#737373;font-size:13px;">Reply to this email to contact ${safeName} directly. This inquiry is also saved in your Google Sheet.</p>
       </div>
     </div>
   `;
