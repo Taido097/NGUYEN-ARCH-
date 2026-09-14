@@ -4,12 +4,12 @@ import { buildContactDetails, getContactRecipient, type InquiryType } from './ro
 export const runtime = 'nodejs';
 
 const GOOGLE_SHEETS_WEBHOOK_URL =
-  'https://script.google.com/macros/s/AKfycbzfsoN0dWc1X1c1pyA-0RUsICYtSE_-LJwAPl-zBrG1Mq8meN4Gp3KYjV2MD0nxuU-P/exec';
+  'https://script.google.com/macros/s/AKfycbxHDrevJjnpWcPEx3Vykh0qgOAFrIpbBCp0licKO4U6-CJPUcMaWsMjj0lr8W4Wv9Nt/exec';
 
 // Where this site's submissions are emailed. Sent with the payload (rather than set as the script's
 // global address) because the same Apps Script also serves the studio site, which keeps its own
 // recipient. Hardcoded server-side so a request body can never redirect the notification.
-const LEGACY_NOTIFY_TO = 'info@nguyenarchitecture.com,taido097@gmail.com';
+const LEGACY_NOTIFY_TO = 'consultant@nguyenarchitecture.com,info@nguyenarchitecture.com,taido097@gmail.com';
 const NOTIFY_FROM_NAME = 'NGUYEN Architecture Website';
 
 function normalize(value: unknown) {
