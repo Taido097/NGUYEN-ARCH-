@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { buildContactDetails, getContactRecipient, type InquiryType } from './routing';
 
 export const runtime = 'nodejs';
 
@@ -8,7 +9,7 @@ const GOOGLE_SHEETS_WEBHOOK_URL =
 // Where this site's submissions are emailed. Sent with the payload (rather than set as the script's
 // global address) because the same Apps Script also serves the studio site, which keeps its own
 // recipient. Hardcoded server-side so a request body can never redirect the notification.
-const NOTIFY_TO = 'info@nguyenarchitecture.com,taido097@gmail.com';
+const LEGACY_NOTIFY_TO = 'info@nguyenarchitecture.com,taido097@gmail.com';
 const NOTIFY_FROM_NAME = 'NGUYEN Architecture Website';
 
 function normalize(value: unknown) {
@@ -52,6 +53,9 @@ export async function POST(request: NextRequest) {
     const email = normalize(body.email).toLowerCase();
     const phone = normalize(body.phone);
     const company = normalize(body.company);
+    const inquiryType = normalize(body.inquiryType);
+    const projectType = normalize(body.projectType);
+    const budget = normalize(body.budget);
     const message = normalize(body.message);
     const website = normalize(body.website);
 
@@ -59,7 +63,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ success: true }, { status: 200 });
     }
 
-    if (!name || !email || !phone || !message) {
+    if (!name || !email || !phone || !message || (inquiryType && !projectType)) {
       return NextResponse.json(
         {
           error:
@@ -104,6 +108,26 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    let notifyTo = LEGACY_NOTIFY_TO;
+    let notificationMessage = message;
+
+    if (inquiryType) {
+      try {
+        notifyTo = getContactRecipient(inquiryType);
+        notificationMessage = buildContactDetails({
+          inquiryType: inquiryType as InquiryType,
+          projectType,
+          budget,
+          message,
+        });
+      } catch {
+        return NextResponse.json(
+          { error: 'Please select a valid inquiry type.' },
+          { status: 400 }
+        );
+      }
+    }
+
     const response = await fetch(GOOGLE_SHEETS_WEBHOOK_URL, {
       method: 'POST',
       headers: {
@@ -119,8 +143,8 @@ export async function POST(request: NextRequest) {
         email,
         phone,
         company,
-        message,
-        notifyTo: NOTIFY_TO,
+        message: notificationMessage,
+        notifyTo,
         notifyFromName: NOTIFY_FROM_NAME,
         submittedAt: new Date().toISOString(),
       }),
