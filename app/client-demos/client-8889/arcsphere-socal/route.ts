@@ -1393,6 +1393,11 @@ const FOOTER_NAV_PATCH = `
 <style id="nguyen-footer-nav-styles">
 footer [data-nguyen-legacy-nav="true"],
 footer [data-nguyen-legacy-nav="true"] * { visibility: hidden !important; pointer-events: none !important; }
+footer [data-nguyen-removed-footer-link="true"] {
+  display: none !important;
+  visibility: hidden !important;
+  pointer-events: none !important;
+}
 footer > .nguyen-footer-links {
   position: absolute !important; left: 71.5% !important; width: 136px !important;
   display: flex !important; flex-direction: column !important; gap: 4px !important;
@@ -1451,7 +1456,8 @@ footer > .nguyen-footer-links > :is(a, button):focus-visible { text-decoration: 
   // data-framer-name="footer-links", so the stylesheet above misses those and they show through
   // underneath the injected nav. Match on the link labels instead of the Framer name.
   const LEGACY_NAV_LABELS = ['home', 'about', 'services', 'projects', 'process', 'contact'];
-  const OTHER_COLUMN_LABELS = ['pinterest', 'linkedin', 'instagram', 'behance', 'privacypolicy', 'cookiepolicy', 'terms&conditions'];
+  const REMOVED_FOOTER_LABELS = ['pinterest', 'linkedin', 'instagram', 'behance', 'privacypolicy', 'cookiepolicy', 'terms&conditions'];
+  const OTHER_COLUMN_LABELS = REMOVED_FOOTER_LABELS;
 
   function hideLegacyElement(el) {
     if (!el || el.closest('.nguyen-footer-links')) return;
@@ -1505,7 +1511,14 @@ footer > .nguyen-footer-links > :is(a, button):focus-visible { text-decoration: 
     // reserves its space and the desktop layout is unchanged.
     footer.querySelectorAll('a').forEach((el) => {
       if (el.closest('.nguyen-footer-links')) return;
-      if (!LEGACY_NAV_LABELS.includes(compact(el.textContent))) return;
+      const label = compact(el.textContent);
+      if (REMOVED_FOOTER_LABELS.includes(label)) {
+        el.setAttribute('data-nguyen-removed-footer-link', 'true');
+        el.setAttribute('aria-hidden', 'true');
+        el.setAttribute('inert', '');
+        return;
+      }
+      if (!LEGACY_NAV_LABELS.includes(label)) return;
       hideLegacyElement(el);
     });
   }
