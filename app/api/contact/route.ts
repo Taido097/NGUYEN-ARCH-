@@ -1,49 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { buildContactDetails, getContactRecipient, type InquiryType } from './routing';
+import { buildEmailPayload, sendViaResend } from './email';
 
 export const runtime = 'nodejs';
 
-const GOOGLE_SHEETS_WEBHOOK_URL =
-  'https://script.google.com/macros/s/AKfycbxHDrevJjnpWcPEx3Vykh0qgOAFrIpbBCp0licKO4U6-CJPUcMaWsMjj0lr8W4Wv9Nt/exec';
-
-// Where this site's submissions are emailed. Sent with the payload (rather than set as the script's
-// global address) because the same Apps Script also serves the studio site, which keeps its own
-// recipient. Hardcoded server-side so a request body can never redirect the notification.
-const LEGACY_NOTIFY_TO = 'info@nguyenarchitecture.com,taido097@gmail.com,consultant@nguyenarchitecture.com';
-const NOTIFY_FROM_NAME = 'NGUYEN Architecture Website';
-
 function normalize(value: unknown) {
   return typeof value === 'string' ? value.trim() : '';
-}
-
-function getWebhookError(
-  responseText: string,
-  status: number,
-  contentType: string
-) {
-  const normalized = responseText.toLowerCase();
-
-  if (
-    normalized.includes('accounts.google.com') ||
-    normalized.includes('sign in') ||
-    normalized.includes('authorization required')
-  ) {
-    return 'The Google Apps Script web app is not publicly accessible. Set Execute as “Me” and Who has access to “Anyone,” then deploy a new version.';
-  }
-
-  if (normalized.includes('script function not found')) {
-    return 'The Google Apps Script deployment does not contain the doPost function. Save the script and deploy a new version.';
-  }
-
-  if (status === 404) {
-    return 'The Google Apps Script deployment URL is no longer active. Deploy the script again and use the new Web app URL ending in /exec.';
-  }
-
-  if (contentType.includes('text/html')) {
-    return 'Google returned an unexpected web page instead of accepting the form. Check the Apps Script deployment permissions and deploy a new version.';
-  }
-
-  return 'Your message could not be saved. Please try again in a moment.';
 }
 
 export async function POST(request: NextRequest) {
@@ -59,6 +20,7 @@ export async function POST(request: NextRequest) {
     const message = normalize(body.message);
     const website = normalize(body.website);
 
+    // Honeypot: a filled hidden field means a bot — accept silently, send nothing.
     if (website) {
       return NextResponse.json({ success: true }, { status: 200 });
     }
@@ -108,86 +70,32 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    let notifyTo = LEGACY_NOTIFY_TO;
-    let notificationMessage = message;
-
-    if (inquiryType) {
-      try {
-        notifyTo = getContactRecipient(inquiryType);
-        notificationMessage = buildContactDetails({
-          inquiryType: inquiryType as InquiryType,
-          projectType,
-          budget,
-          message,
-        });
-      } catch {
-        return NextResponse.json(
-          { error: 'Please select a valid inquiry type.' },
-          { status: 400 }
-        );
-      }
-    }
-
-    const response = await fetch(GOOGLE_SHEETS_WEBHOOK_URL, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Accept: 'application/json',
-        'User-Agent': 'DesignedbyTD-Studio/1.0',
-      },
-      redirect: 'follow',
-      cache: 'no-store',
-      signal: AbortSignal.timeout(15000),
-      body: JSON.stringify({
+    let payload;
+    try {
+      payload = buildEmailPayload({
         name,
         email,
         phone,
         company,
-        message: notificationMessage,
-        notifyTo,
-        notifyFromName: NOTIFY_FROM_NAME,
-        submittedAt: new Date().toISOString(),
-      }),
-    });
-
-    const contentType = response.headers.get('content-type') || '';
-    const responseText = await response.text();
-    let result: { success?: boolean; error?: string; message?: string } = {};
-
-    try {
-      result = JSON.parse(responseText) as typeof result;
+        message,
+        inquiryType,
+        projectType,
+        budget,
+      });
     } catch {
-      console.error('Google Sheets webhook returned a non-JSON response:', {
-        status: response.status,
-        contentType,
-        finalUrl: response.url,
-        responseText: responseText.slice(0, 500),
-      });
-    }
-
-    if (!response.ok || result.success !== true) {
-      console.error('Google Sheets contact webhook error:', {
-        status: response.status,
-        contentType,
-        finalUrl: response.url,
-        result,
-      });
-
       return NextResponse.json(
-        {
-          error:
-            result.error ||
-            getWebhookError(responseText, response.status, contentType),
-        },
-        { status: 502 }
+        { error: 'Please select a valid inquiry type.' },
+        { status: 400 }
       );
     }
 
+    const result = await sendViaResend(payload);
+    if (!result.ok) {
+      return NextResponse.json({ error: result.error }, { status: 502 });
+    }
+
     return NextResponse.json(
-      {
-        success: true,
-        message: 'Your request was sent successfully.',
-      },
+      { success: true, message: 'Your request was sent successfully.' },
       { status: 200 }
     );
   } catch (error) {
@@ -195,12 +103,7 @@ export async function POST(request: NextRequest) {
     console.error('Contact form error:', message);
 
     return NextResponse.json(
-      {
-        error:
-          message.includes('timeout') || message.includes('aborted')
-            ? 'The request took too long. Please try again.'
-            : 'Something went wrong. Please try again.',
-      },
+      { error: 'Something went wrong. Please try again.' },
       { status: 500 }
     );
   }
