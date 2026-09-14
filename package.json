@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "prebuild": "node scripts/verify-builders-body.mjs",
+    "prebuild": "node scripts/verify-builders-body.mjs && node scripts/test-nguyen-client-webhook.mjs",
     "build": "next build",
     "start": "next start",
     "lint": "eslint ."
