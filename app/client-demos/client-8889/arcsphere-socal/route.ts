@@ -1848,6 +1848,21 @@ const ICON_BAR_PATCH = `
     }
   }
 
+  function alignContactRow(row) {
+    const footer = row.closest('footer');
+    if (!footer) return;
+    const reference = Array.from(footer.querySelectorAll('h1,h2,h3,h4,p,span,div')).find((el) => {
+      if ((el.textContent || '').replace(/\\s+/g, ' ').trim().toLowerCase() !== 'get in touch') return false;
+      return !Array.from(el.children).some((child) =>
+        (child.textContent || '').replace(/\\s+/g, ' ').trim().toLowerCase() === 'get in touch');
+    });
+    if (!reference) return;
+    row.style.setProperty('position', 'relative', 'important');
+    row.style.setProperty('left', '0px', 'important');
+    const offset = Math.round(reference.getBoundingClientRect().left - row.getBoundingClientRect().left);
+    row.style.setProperty('left', offset + 'px', 'important');
+  }
+
   function patchBar() {
     document.querySelectorAll(ROW_SELECTOR).forEach((row) => {
       // The three direct component wrappers are email, phone and location; the
@@ -1870,6 +1885,7 @@ const ICON_BAR_PATCH = `
         });
         item.querySelectorAll('a').forEach((link) => setAttribute(link, 'href', contact.href));
       });
+      alignContactRow(row);
     });
   }
 
@@ -1888,6 +1904,7 @@ const ICON_BAR_PATCH = `
 
   function start() {
     patchBar();
+    window.addEventListener('resize', patchBar);
     document.addEventListener('click', activateContact, true);
     document.addEventListener('keydown', activateContact, true);
     // Labels are mounted anew on hover, even minutes after load. Observe those
