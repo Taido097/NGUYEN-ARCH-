@@ -23,6 +23,10 @@ export default function ContactPage() {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+    if (!fields.inquiryType) {
+      setError('Please choose Project Inquiry or Collaboration.');
+      return;
+    }
     setSubmitting(true);
     setError('');
 
@@ -72,20 +76,27 @@ export default function ContactPage() {
 
             <div className="cf-body">
               <form className="cf-form" onSubmit={handleSubmit}>
-                <label className="cf-field">
+                <div className="cf-field">
                   <span className="cf-label">Inquiry Type <span className="cf-req">*</span></span>
-                  <select
-                    className="cf-input cf-select"
-                    name="inquiryType"
-                    value={fields.inquiryType}
-                    onChange={handleChange}
-                    required
-                  >
-                    <option value="">Select an inquiry type…</option>
-                    <option value="consultation">Project Consultation</option>
-                    <option value="collaboration">Contractor / Developer Collaboration</option>
-                  </select>
-                </label>
+                  <div className="cf-choice-row" role="group" aria-label="Inquiry Type">
+                    <button
+                      className={`cf-choice${fields.inquiryType === 'consultation' ? ' is-active' : ''}`}
+                      type="button"
+                      aria-pressed={fields.inquiryType === 'consultation'}
+                      onClick={() => setFields((prev) => ({ ...prev, inquiryType: 'consultation' }))}
+                    >
+                      Project Inquiry
+                    </button>
+                    <button
+                      className={`cf-choice${fields.inquiryType === 'collaboration' ? ' is-active' : ''}`}
+                      type="button"
+                      aria-pressed={fields.inquiryType === 'collaboration'}
+                      onClick={() => setFields((prev) => ({ ...prev, inquiryType: 'collaboration' }))}
+                    >
+                      Collaboration
+                    </button>
+                  </div>
+                </div>
 
                 <div className="cf-row">
                   <label className="cf-field">
@@ -268,6 +279,14 @@ const CSS = `
 .cf-field{display:flex;flex-direction:column;gap:8px}
 .cf-label{font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:.08em;color:#736b62}
 .cf-req{color:#a0392a}
+.cf-choice-row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.cf-choice{
+  width:100%;background:#fff;color:#4f4742;border:1px solid #d8d0c6;border-radius:6px;
+  padding:13px 16px;font:600 13px/1.4 inherit;cursor:pointer;transition:background .18s,color .18s,border-color .18s;
+}
+.cf-choice:hover{border-color:#4f4742}
+.cf-choice.is-active{background:#1f1c19;color:#f0ebe6;border-color:#1f1c19}
+.cf-choice:focus-visible{outline:2px solid #4f4742;outline-offset:2px}
 
 .cf-input{
   width:100%;

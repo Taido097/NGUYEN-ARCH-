@@ -2503,6 +2503,7 @@ export async function GET() {
   const API = window.location.origin + '/api/contact';
   const EMAIL_RE = /^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/;
   const PHONE_RE = /^[\\d\\s()+\\-.]{7,}$/;
+  const PROJECT_TYPES = new Set(['Custom Home','Addition / Remodel','ADU & SB9','Multifamily','Commercial','Land Development','Engineering / Approvals','Builders Complete Delivery','Other']);
   // Compact button text that signals a form submit (handles Framer split-text doubling/tripling).
   const SUBMIT_WORDS = ['submit','send','sendmessage','sendinquiry','sendrequest','sendit','contactus','getstarted','getintouch','startaproject','inquirenow','requestaquote','requestconsultation','bookconsultation'];
 
@@ -2542,11 +2543,42 @@ export async function GET() {
     });
   }
 
+  function ensureInquiryButtons(container) {
+    if (!container || container.querySelector('.nf-inquiry-choice')) return;
+    const block = document.createElement('div');
+    block.className = 'nf-inquiry-choice';
+    block.style.cssText = 'display:flex;flex-direction:column;gap:8px;margin:0 0 20px;width:100%;';
+    block.innerHTML = '<span style="font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:.08em;color:#736b62;">Inquiry Type *</span><div role="group" aria-label="Inquiry Type" style="display:grid;grid-template-columns:1fr 1fr;gap:10px;"><button type="button" data-inquiry-type="consultation" aria-pressed="false" style="background:#fff;color:#4f4742;border:1px solid #d8d0c6;border-radius:6px;padding:13px 16px;font:600 13px/1.4 inherit;cursor:pointer;">Project Inquiry</button><button type="button" data-inquiry-type="collaboration" aria-pressed="false" style="background:#fff;color:#4f4742;border:1px solid #d8d0c6;border-radius:6px;padding:13px 16px;font:600 13px/1.4 inherit;cursor:pointer;">Collaboration</button></div>';
+    block.querySelectorAll('[data-inquiry-type]').forEach((button) => {
+      button.addEventListener('click', () => {
+        container.dataset.nguyenInquiryType = button.dataset.inquiryType;
+        block.querySelectorAll('[data-inquiry-type]').forEach((choice) => {
+          const active = choice === button;
+          choice.setAttribute('aria-pressed', active ? 'true' : 'false');
+          choice.style.background = active ? '#1f1c19' : '#fff';
+          choice.style.color = active ? '#f0ebe6' : '#4f4742';
+          choice.style.borderColor = active ? '#1f1c19' : '#d8d0c6';
+        });
+      });
+    });
+    container.insertBefore(block, container.firstChild);
+  }
+
   // Classify by input type, value shape, then label — resilient to Framer's opaque labels.
   function collectFields(container) {
     const els = fieldEls(container);
-    const data = { name: '', email: '', phone: '', company: '', message: '' };
+    const data = { name: '', email: '', phone: '', company: '', message: '', inquiryType: '', projectType: '', budget: '' };
     const used = new Set();
+
+    data.inquiryType = container.dataset.nguyenInquiryType || '';
+    els.forEach((el) => {
+      if (el.tagName !== 'SELECT') return;
+      const v = (el.value || '').trim();
+      if (!v) return;
+      const options = Array.from(el.options || []).map((option) => (option.value || '').trim());
+      if (!data.projectType && options.some((option) => PROJECT_TYPES.has(option))) { data.projectType = v; used.add(el); }
+      else if (!data.budget && /budget/.test(getLabel(el))) { data.budget = v; used.add(el); }
+    });
 
     els.forEach((el) => {
       const v = (el.value || '').trim();
@@ -2575,6 +2607,8 @@ export async function GET() {
         if (el.tagName === 'INPUT' && (type === 'text' || type === '') && v.length <= 80) { data.name = v; used.add(el); break; }
       }
     }
+    const description = els.find((el) => el.tagName === 'TEXTAREA' && (el.value || '').trim());
+    if (description) { data.message = (description.value || '').trim(); used.add(description); }
     const extras = [];
     els.forEach((el) => {
       const v = (el.value || '').trim();
@@ -2582,7 +2616,7 @@ export async function GET() {
       const label = getLabel(el);
       extras.push(label ? label + ': ' + v : v);
     });
-    if (extras.length) data.message = extras.join('\\n');
+    if (extras.length) data.message = [data.message, extras.join('\\n')].filter(Boolean).join('\\n');
     return data;
   }
 
@@ -2633,8 +2667,19 @@ export async function GET() {
 
   async function doSubmit(container) {
     if (!container || container.__nguyenSubmitting) return;
+    ensureInquiryButtons(container);
     container.__nguyenSubmitting = true;
     const fields = collectFields(container);
+    if (!fields.inquiryType) {
+      showBanner(container, false, 'Please choose Project Inquiry or Collaboration.');
+      container.__nguyenSubmitting = false;
+      return;
+    }
+    if (!fields.projectType) {
+      showBanner(container, false, 'Please select one project type.');
+      container.__nguyenSubmitting = false;
+      return;
+    }
     if (!fields.name || !fields.email || !fields.phone) {
       showBanner(container, false, 'Please fill in your name, email, and phone number.');
       container.__nguyenSubmitting = false;
@@ -2660,6 +2705,7 @@ export async function GET() {
   // Attach a native submit listener to any real <form> (covers <button type="submit">).
   function interceptForm(form) {
     if (form.__nguyenIntercepted) return;
+    ensureInquiryButtons(form);
     form.__nguyenIntercepted = true;
     form.addEventListener('submit', (e) => {
       e.preventDefault();
@@ -2689,7 +2735,11 @@ export async function GET() {
     }, true);
   }
 
-  function scan() { document.querySelectorAll('form').forEach(interceptForm); }
+  function scan() {
+    document.querySelectorAll('form').forEach(interceptForm);
+    const container = anyFormContainer();
+    if (container) ensureInquiryButtons(container);
+  }
   scan();
   window.addEventListener('load', scan, { once: true });
   [300, 800, 2000, 4000].forEach((t) => setTimeout(scan, t));
