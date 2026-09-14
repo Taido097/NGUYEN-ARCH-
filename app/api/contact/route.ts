@@ -4,7 +4,7 @@ import { buildContactDetails, getContactRecipient, type InquiryType } from './ro
 export const runtime = 'nodejs';
 
 const GOOGLE_SHEETS_WEBHOOK_URL =
-  'https://script.google.com/macros/s/AKfycbzTOBkNUvd5vW-aTa0qG5S_8ppPlOLlInoDMav-pF0WveebO2iHDotcbmCAqDGVEt9skA/exec';
+  'https://script.google.com/macros/s/AKfycbzfsoN0dWc1X1c1pyA-0RUsICYtSE_-LJwAPl-zBrG1Mq8meN4Gp3KYjV2MD0nxuU-P/exec';
 
 // Where this site's submissions are emailed. Sent with the payload (rather than set as the script's
 // global address) because the same Apps Script also serves the studio site, which keeps its own
