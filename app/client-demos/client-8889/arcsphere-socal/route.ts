@@ -2449,6 +2449,82 @@ const HOMEPAGE_INTRO_IMAGE_SWAP_PATCH = `
 })();
 </script>`
 
+const HOMEPAGE_FORM_PATCH = `
+<script id="nguyen-socal-homepage-form-routing">
+(() => {
+  const FORM_SELECTOR = 'form.framer-1xuvuhu';
+
+  function fieldValue(form, selector) {
+    const field = form.querySelector(selector);
+    return field && typeof field.value === 'string' ? field.value.trim() : '';
+  }
+
+  function setButtonLabel(button, text) {
+    const label = button && button.querySelector('p');
+    if (label) label.textContent = text;
+  }
+
+  async function submitHomepageForm(event, form) {
+    event.preventDefault();
+    event.stopPropagation();
+    if (event.stopImmediatePropagation) event.stopImmediatePropagation();
+    if (form.dataset.nguyenSubmitting === 'true') return;
+    if (!form.reportValidity()) return;
+
+    const button = form.querySelector('button[type="submit"]');
+    const service = fieldValue(form, 'select[name="Location"]');
+    const location = fieldValue(form, '[data-framer-name="Your Location"] input');
+    const scale = fieldValue(form, 'input[name="Project Scale"]:checked');
+    const message = [
+      'Homepage project consultation request.',
+      'Service: ' + (service || 'Not provided') + '.',
+      'Project location: ' + (location || 'Not provided') + '.',
+      'Project scale: ' + (scale || 'Not provided') + '.',
+    ].join(' ');
+
+    form.dataset.nguyenSubmitting = 'true';
+    if (button) button.disabled = true;
+    setButtonLabel(button, 'Sending...');
+
+    try {
+      const response = await fetch(window.location.origin + '/api/contact', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          inquiryType: 'consultation',
+          name: fieldValue(form, 'input[name="Name"]'),
+          email: fieldValue(form, 'input[name="Email"]'),
+          phone: fieldValue(form, 'input[name="Phone Number"]'),
+          projectType: service,
+          budget: scale,
+          message,
+          company: '',
+          website: '',
+        }),
+      });
+      const result = await response.json();
+      if (!response.ok || result.success !== true) {
+        throw new Error(result.error || 'Your request could not be sent.');
+      }
+      setButtonLabel(button, 'Submitted');
+      form.reset();
+    } catch (error) {
+      setButtonLabel(button, 'Try Again');
+      window.alert(error instanceof Error ? error.message : 'Your request could not be sent.');
+    } finally {
+      form.dataset.nguyenSubmitting = 'false';
+      if (button) button.disabled = false;
+    }
+  }
+
+  document.addEventListener('submit', (event) => {
+    const form = event.target;
+    if (!(form instanceof HTMLFormElement) || !form.matches(FORM_SELECTOR)) return;
+    submitHomepageForm(event, form);
+  }, true);
+})();
+</script>`
+
 const PAGE_VISIBILITY_GUARD_PATCH = `
 <script id="nguyen-socal-page-visibility-guard">
 (() => {
@@ -2504,7 +2580,7 @@ export async function GET() {
   // "NGUYEN", so cover both the raw and post-rebrand forms (harmless if client-rendered).
   html = html.replace(/hello@(?:arcsphere|nguyen)studio\.ae/gi, 'info@nguyenarchitecture.com')
   html = html.replace('</head>', `${FOOTER_FIRST_PAINT_STYLE}</head>`)
-  html = html.replace('</body>', `${SPLIT_TEXT_PATCH}${BRAND_PATCH}${SQUARE_IMAGES_PATCH}${SERVICES_ANCHOR_PATCH}${MAIN_NAV_PATCH}${ENGINEERING_SERVICE_PATCH}${PROJECT_CARDS_PATCH}${DESIGN_PANELS_PATCH}${RESIDENTIAL_ROW_IMAGE_PATCH}${BLUEPRINT_IMAGE_PATCH}${PROCESS_TILE_IMAGE_PATCH}${CARD_ROUTING_PATCH}${EXTRA_CARD_CLEANUP_PATCH}${SERVICE_DROPDOWN_PATCH}${PROJECT_TYPE_SECTION_PATCH}${NON_LINKING_PROJECT_PANEL_PATCH}${FOOTER_PATCH}${FOOTER_NAV_PATCH}${ICON_BAR_PATCH}${TESTIMONIAL_PATCH}${HOMEPAGE_MOBILE_HERO_CROP}${HOMEPAGE_HERO_LOCK_PATCH}${HOMEPAGE_SIDE_HERO_LOCK_PATCH}${HERO_CTA_PATCH}${HOMEPAGE_INTRO_IMAGE_SWAP_PATCH}${PAGE_VISIBILITY_GUARD_PATCH}</body>`)
+  html = html.replace('</body>', `${SPLIT_TEXT_PATCH}${BRAND_PATCH}${SQUARE_IMAGES_PATCH}${SERVICES_ANCHOR_PATCH}${MAIN_NAV_PATCH}${ENGINEERING_SERVICE_PATCH}${PROJECT_CARDS_PATCH}${DESIGN_PANELS_PATCH}${RESIDENTIAL_ROW_IMAGE_PATCH}${BLUEPRINT_IMAGE_PATCH}${PROCESS_TILE_IMAGE_PATCH}${CARD_ROUTING_PATCH}${EXTRA_CARD_CLEANUP_PATCH}${SERVICE_DROPDOWN_PATCH}${PROJECT_TYPE_SECTION_PATCH}${NON_LINKING_PROJECT_PANEL_PATCH}${FOOTER_PATCH}${FOOTER_NAV_PATCH}${ICON_BAR_PATCH}${TESTIMONIAL_PATCH}${HOMEPAGE_MOBILE_HERO_CROP}${HOMEPAGE_HERO_LOCK_PATCH}${HOMEPAGE_SIDE_HERO_LOCK_PATCH}${HERO_CTA_PATCH}${HOMEPAGE_INTRO_IMAGE_SWAP_PATCH}${HOMEPAGE_FORM_PATCH}${PAGE_VISIBILITY_GUARD_PATCH}</body>`)
 
   const headers = new Headers(response.headers)
   headers.set('Content-Type', 'text/html; charset=utf-8')
