@@ -4,6 +4,8 @@ import { TESTIMONIAL_PATCH } from "./testimonial-patch"
 const OLD_COPY = 'Based in Orange County, we provide commercial architecture, engineering and permit support from existing-condition survey and business layout through plan check and approval.'
 const NEW_COPY = 'Based in Southern California, we provide residential and commercial architecture, engineering, and permit support from concept through approval.'
 
+const DOCUMENT_TITLE = 'NGUYEN Architecture | Architecture & Engineering'
+
 // Replace the main Framer hero asset at the HTML/hydration source so desktop, tablet, and mobile all
 // render the same selected project image. The two off-canvas side images use different source hashes
 // and are intentionally left unchanged.
@@ -2539,6 +2541,7 @@ export async function GET() {
 
   let html = await response.text()
   html = html.replace('<head>', `<head>${FRAMER_FORM_INQUIRY_CAPTURE_PATCH}`)
+  html = html.replace(/<title[^>]*>[\s\S]*?<\/title>/i, `<title>${DOCUMENT_TITLE}</title>`)
   html = html.split(OLD_COPY).join(NEW_COPY)
   for (const source of HOMEPAGE_HERO_SOURCES) html = html.split(source).join(HOMEPAGE_HERO_IMAGE)
   for (const [source, target] of HOMEPAGE_SIDE_HERO_SOURCES) html = html.split(source).join(target)
