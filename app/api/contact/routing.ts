@@ -1,8 +1,8 @@
 export type InquiryType = 'consultation' | 'collaboration';
 
 const CONTACT_RECIPIENTS: Record<InquiryType, string> = {
-  consultation: 'consultant@nguyenarchitecture.com,info@nguyenarchitecture.com,taido097@gmail.com',
-  collaboration: 'info@nguyenarchitecture.com,consultant@nguyenarchitecture.com,taido097@gmail.com',
+  consultation: 'consultant@nguyenarchitecture.com,taido097@gmail.com',
+  collaboration: 'info@nguyenarchitecture.com,taido097@gmail.com',
 };
 
 export function getContactRecipient(inquiryType: string) {
@@ -16,9 +16,24 @@ export function getContactRecipient(inquiryType: string) {
 }
 
 const INQUIRY_LABELS: Record<InquiryType, string> = {
-  consultation: 'Project Consultation',
-  collaboration: 'Contractor / Developer Collaboration',
+  consultation: 'Project Inquiry',
+  collaboration: 'Collaboration',
 };
+
+const SUBJECT_PREFIXES: Record<InquiryType, string> = {
+  consultation: 'New Project Inquiry',
+  collaboration: 'New Collaboration Request',
+};
+
+export function getContactSubject(inquiryType: string, projectType: string) {
+  const prefix = SUBJECT_PREFIXES[inquiryType as InquiryType];
+
+  if (!prefix) {
+    throw new Error('Invalid inquiry type.');
+  }
+
+  return `${prefix} — ${projectType || 'Not provided'}`;
+}
 
 export function buildContactDetails({
   inquiryType,

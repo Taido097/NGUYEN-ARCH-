@@ -1,15 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { buildContactDetails, getContactRecipient, type InquiryType } from './routing';
+import { getContactRecipient } from './routing';
 
 export const runtime = 'nodejs';
 
 const GOOGLE_SHEETS_WEBHOOK_URL =
-  'https://script.google.com/macros/s/AKfycbxHDrevJjnpWcPEx3Vykh0qgOAFrIpbBCp0licKO4U6-CJPUcMaWsMjj0lr8W4Wv9Nt/exec';
+  'https://script.google.com/macros/s/AKfycbxINK0_TdSjvn5yJI_cdbG-m24MBcPFRRynVDX_bY2m3leSCTCZshZ5h6j0vJ9ruVse/exec';
 
-// Where this site's submissions are emailed. Sent with the payload (rather than set as the script's
-// global address) because the same Apps Script also serves the studio site, which keeps its own
-// recipient. Hardcoded server-side so a request body can never redirect the notification.
-const LEGACY_NOTIFY_TO = 'consultant@nguyenarchitecture.com,info@nguyenarchitecture.com,taido097@gmail.com';
 const NOTIFY_FROM_NAME = 'NGUYEN Architecture Website';
 
 function normalize(value: unknown) {
@@ -108,24 +104,15 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    let notifyTo = LEGACY_NOTIFY_TO;
-    let notificationMessage = message;
+    let notifyTo = '';
 
-    if (inquiryType) {
-      try {
-        notifyTo = getContactRecipient(inquiryType);
-        notificationMessage = buildContactDetails({
-          inquiryType: inquiryType as InquiryType,
-          projectType,
-          budget,
-          message,
-        });
-      } catch {
-        return NextResponse.json(
-          { error: 'Please select a valid inquiry type.' },
-          { status: 400 }
-        );
-      }
+    try {
+      notifyTo = getContactRecipient(inquiryType);
+    } catch {
+      return NextResponse.json(
+        { error: 'Please select a valid inquiry type.' },
+        { status: 400 }
+      );
     }
 
     const response = await fetch(GOOGLE_SHEETS_WEBHOOK_URL, {
@@ -143,7 +130,10 @@ export async function POST(request: NextRequest) {
         email,
         phone,
         company,
-        message: notificationMessage,
+        message,
+        inquiryType,
+        projectType,
+        budget,
         notifyTo,
         notifyFromName: NOTIFY_FROM_NAME,
         submittedAt: new Date().toISOString(),
