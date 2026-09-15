@@ -6,6 +6,18 @@ const NEW_COPY = 'Based in Southern California, we provide residential and comme
 
 const DOCUMENT_TITLE = 'NGUYEN Architecture | Architecture & Engineering'
 
+const DOCUMENT_TITLE_LOCK_PATCH = `
+<script id="nguyen-document-title-lock">
+(() => {
+  const apply = () => {
+    if (document.title !== '${DOCUMENT_TITLE}') document.title = '${DOCUMENT_TITLE}';
+  };
+  apply();
+  new MutationObserver(apply).observe(document.head, { childList: true, subtree: true, characterData: true });
+  [0, 50, 250, 1000, 3000, 8000].forEach((delay) => setTimeout(apply, delay));
+})();
+</script>`
+
 // Replace the main Framer hero asset at the HTML/hydration source so desktop, tablet, and mobile all
 // render the same selected project image. The two off-canvas side images use different source hashes
 // and are intentionally left unchanged.
@@ -2540,7 +2552,7 @@ export async function GET() {
   if (!response.ok) return response
 
   let html = await response.text()
-  html = html.replace('<head>', `<head>${FRAMER_FORM_INQUIRY_CAPTURE_PATCH}`)
+  html = html.replace('<head>', `<head>${DOCUMENT_TITLE_LOCK_PATCH}${FRAMER_FORM_INQUIRY_CAPTURE_PATCH}`)
   html = html.replace(/<title[^>]*>[\s\S]*?<\/title>/i, `<title>${DOCUMENT_TITLE}</title>`)
   html = html.split(OLD_COPY).join(NEW_COPY)
   for (const source of HOMEPAGE_HERO_SOURCES) html = html.split(source).join(HOMEPAGE_HERO_IMAGE)
