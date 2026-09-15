@@ -55,6 +55,18 @@ const FRAMER_FORM_INQUIRY_CAPTURE_PATCH = `
   }
   window.addEventListener('pointerdown', choose, true);
   window.addEventListener('click', choose, true);
+
+  function submitHomepageForm(event) {
+    const start = event.target && event.target.nodeType === Node.TEXT_NODE ? event.target.parentElement : event.target;
+    const button = start && start.closest && start.closest('button, a, [role="button"], [type="submit"]');
+    if (!button) return;
+    const label = (button.textContent || '').replace(/\\s+/g, '').toLowerCase();
+    if (label !== 'submit' && label !== 'submitsubmit' && label !== 'submitsubmitsubmit') return;
+    if (!window.__nguyenHomepageSubmit || !window.__nguyenHomepageSubmit(button)) return;
+    event.preventDefault();
+    event.stopImmediatePropagation();
+  }
+  window.addEventListener('click', submitHomepageForm, true);
 })();
 </script>`
 
@@ -2757,6 +2769,14 @@ export async function GET() {
     }
   }
 
+  // Exposed for the <head> capture listener, which runs before Framer's hydration handlers.
+  window.__nguyenHomepageSubmit = (submitEl) => {
+    const container = containerFrom(submitEl);
+    if (!container) return false;
+    doSubmit(container);
+    return true;
+  };
+
   // Attach a native submit listener to any real <form> (covers <button type="submit">).
   function interceptForm(form) {
     if (form.__nguyenIntercepted) return;
@@ -2782,11 +2802,9 @@ export async function GET() {
         if (looksLikeSubmit(walk)) { submitEl = walk; break; }
       }
       if (!submitEl) return;
-      const container = containerFrom(submitEl);
-      if (!container) return; // no nearby form fields — let HERO_CTA_PATCH handle it
+      if (!window.__nguyenHomepageSubmit(submitEl)) return; // no nearby form fields — let HERO_CTA_PATCH handle it
       e.preventDefault();
       e.stopImmediatePropagation();
-      doSubmit(container);
     }, true);
   }
 
