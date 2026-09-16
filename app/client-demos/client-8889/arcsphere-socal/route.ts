@@ -1773,22 +1773,30 @@ const NGUYEN_INSTAGRAM_URL = 'https://www.instagram.com/nguyen_architecture/'
 const INSTAGRAM_SOCIAL_PATCH = `
 <script id="nguyen-instagram-social">
 (() => {
-  const compact = (value) => (value || '').replace(/\\s+/g, '').toLowerCase();
+  const INSTAGRAM_SELECTOR = 'footer a[data-framer-name="InstagramLogo"]';
+  const INSTAGRAM_URL = '${NGUYEN_INSTAGRAM_URL}';
+
   function connectInstagram() {
-    document.querySelectorAll('footer a').forEach((link) => {
-      const key = compact(link.textContent);
-      if (key !== 'instagram' && key !== 'instagraminstagram') return;
-      link.setAttribute('href', '${NGUYEN_INSTAGRAM_URL}');
-      link.setAttribute('target', '_blank');
-      link.setAttribute('rel', 'noopener noreferrer');
-      link.setAttribute('aria-label', 'Nguyen Architecture on Instagram');
-      link.setAttribute('data-nguyen-instagram-link', 'true');
+    document.querySelectorAll(INSTAGRAM_SELECTOR).forEach((link) => {
+      if (link.getAttribute('href') !== INSTAGRAM_URL) link.setAttribute('href', INSTAGRAM_URL);
+      if (link.getAttribute('target') !== '_blank') link.setAttribute('target', '_blank');
+      if (link.getAttribute('rel') !== 'noopener noreferrer') link.setAttribute('rel', 'noopener noreferrer');
+      if (link.getAttribute('aria-label') !== 'Nguyen Architecture on Instagram') link.setAttribute('aria-label', 'Nguyen Architecture on Instagram');
+      if (link.getAttribute('data-nguyen-instagram-icon') !== 'true') link.setAttribute('data-nguyen-instagram-icon', 'true');
+      link.removeAttribute('data-nguyen-card-url');
+      link.removeAttribute('data-nguyen-routed');
     });
   }
+
   connectInstagram();
   window.addEventListener('load', connectInstagram, { once: true });
   const observer = new MutationObserver(connectInstagram);
-  if (document.body) observer.observe(document.body, { childList: true, subtree: true });
+  if (document.body) observer.observe(document.body, {
+    childList: true,
+    subtree: true,
+    attributes: true,
+    attributeFilter: ['data-nguyen-card-url', 'href', 'data-nguyen-routed'],
+  });
 })();
 </script>`
 
