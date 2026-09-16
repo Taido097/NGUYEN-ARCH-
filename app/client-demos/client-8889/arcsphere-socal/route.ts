@@ -1773,7 +1773,7 @@ const NGUYEN_INSTAGRAM_URL = 'https://www.instagram.com/nguyen_architecture/'
 const INSTAGRAM_SOCIAL_PATCH = `
 <script id="nguyen-instagram-social">
 (() => {
-  const INSTAGRAM_SELECTOR = 'footer a[data-framer-name="InstagramLogo"]';
+  const INSTAGRAM_SELECTOR = 'a[data-framer-name="InstagramLogo"]';
   const INSTAGRAM_URL = '${NGUYEN_INSTAGRAM_URL}';
 
   function connectInstagram() {
