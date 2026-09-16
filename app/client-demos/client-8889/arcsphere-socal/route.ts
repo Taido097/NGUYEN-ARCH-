@@ -1769,6 +1769,7 @@ const FACEBOOK_SOCIAL_PATCH = `
 </script>`
 
 const NGUYEN_INSTAGRAM_URL = 'https://www.instagram.com/nguyen_architecture/'
+const INSTAGRAM_ICON_HREF_RE = /(<a\b(?=[^>]*data-framer-name="InstagramLogo")[^>]*\bhref=")https:\/\/instagram\.com(")/g
 
 const INSTAGRAM_SOCIAL_PATCH = `
 <script id="nguyen-instagram-social">
@@ -2609,6 +2610,7 @@ export async function GET() {
   if (!response.ok) return response
 
   let html = await response.text()
+  html = html.replace(INSTAGRAM_ICON_HREF_RE, `$1${NGUYEN_INSTAGRAM_URL}$2`)
   html = html.replace('<head>', `<head>${DOCUMENT_TITLE_LOCK_PATCH}${FRAMER_FORM_INQUIRY_CAPTURE_PATCH}`)
   html = html.replace(/<title[^>]*>[\s\S]*?<\/title>/i, `<title>${DOCUMENT_TITLE}</title>`)
   html = html.split(OLD_COPY).join(NEW_COPY)

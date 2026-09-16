@@ -4,11 +4,15 @@ import { readFile } from 'node:fs/promises'
 
 const routePath = new URL('../app/client-demos/client-8889/arcsphere-socal/route.ts', import.meta.url)
 
-test('connects the rendered Instagram icon without card-routing interception', async () => {
+test('ships the Nguyen Instagram URL on the rendered icon before browser scripts run', async () => {
   const source = await readFile(routePath, 'utf8')
 
-  assert.match(source, /const INSTAGRAM_SELECTOR = 'a\\[data-framer-name="InstagramLogo"\\]'/)
-  assert.match(source, /removeAttribute\\('data-nguyen-card-url'\\)/)
+  assert.match(source, /const INSTAGRAM_ICON_HREF_RE = \/\(/)
+  assert.match(source, /html = html\.replace\(INSTAGRAM_ICON_HREF_RE, \`\$1\$\{NGUYEN_INSTAGRAM_URL\}\$2\`\)/)
+})
+
+test('keeps the browser guard for Framer hydration changes', async () => {
+  const source = await readFile(routePath, 'utf8')
+  assert.match(source, /const INSTAGRAM_SELECTOR = 'a\[data-framer-name="InstagramLogo"\]'/)
   assert.match(source, /data-nguyen-instagram-icon/)
-  assert.match(source, /attributeFilter: \\['data-nguyen-card-url', 'href', 'data-nguyen-routed'\\]/)
 })
