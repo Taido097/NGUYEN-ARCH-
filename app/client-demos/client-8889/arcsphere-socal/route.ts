@@ -1743,6 +1743,31 @@ footer > .nguyen-footer-links > :is(a, button):focus-visible { text-decoration: 
 })();
 <\/script>`
 
+const NGUYEN_FACEBOOK_URL = 'https://www.facebook.com/p/Nguyen-Architecture-100067629215747/'
+
+const FACEBOOK_SOCIAL_PATCH = `
+<script id="nguyen-facebook-social">
+(() => {
+  const compact = (value) => (value || '').replace(/\\s+/g, '').toLowerCase();
+  function replacePinterest() {
+    document.querySelectorAll('footer a').forEach((link) => {
+      const key = compact(link.textContent);
+      if (key !== 'pinterest' && key !== 'pinterestpinterest') return;
+      link.setAttribute('href', '${NGUYEN_FACEBOOK_URL}');
+      link.setAttribute('target', '_blank');
+      link.setAttribute('rel', 'noopener noreferrer');
+      link.setAttribute('aria-label', 'Nguyen Architecture on Facebook');
+      link.setAttribute('data-nguyen-facebook-link', 'true');
+      link.querySelectorAll('p').forEach((label) => { label.textContent = 'facebook'; });
+    });
+  }
+  replacePinterest();
+  window.addEventListener('load', replacePinterest, { once: true });
+  const observer = new MutationObserver(replacePinterest);
+  if (document.body) observer.observe(document.body, { childList: true, subtree: true });
+})();
+</script>`
+
 const ICON_BAR_PATCH = `
 <style id="nguyen-socal-mobile-contact-layout">
 [data-nguyen-mobile-contact-label] { display: none; }
@@ -2844,7 +2869,7 @@ export async function GET() {
   // "NGUYEN", so cover both the raw and post-rebrand forms (harmless if client-rendered).
   html = html.replace(/hello@(?:arcsphere|nguyen)studio\.ae/gi, 'info@nguyenarchitecture.com')
   html = html.replace('</head>', `${FOOTER_FIRST_PAINT_STYLE}</head>`)
-  html = html.replace('</body>', `${SPLIT_TEXT_PATCH}${BRAND_PATCH}${SQUARE_IMAGES_PATCH}${SERVICES_ANCHOR_PATCH}${MAIN_NAV_PATCH}${ENGINEERING_SERVICE_PATCH}${PROJECT_CARDS_PATCH}${DESIGN_PANELS_PATCH}${RESIDENTIAL_ROW_IMAGE_PATCH}${BLUEPRINT_IMAGE_PATCH}${PROCESS_TILE_IMAGE_PATCH}${CARD_ROUTING_PATCH}${EXTRA_CARD_CLEANUP_PATCH}${SERVICE_DROPDOWN_PATCH}${PROJECT_TYPE_SECTION_PATCH}${FOOTER_PATCH}${FOOTER_NAV_PATCH}${ICON_BAR_PATCH}${TESTIMONIAL_PATCH}${HOMEPAGE_MOBILE_HERO_CROP}${HOMEPAGE_HERO_LOCK_PATCH}${HOMEPAGE_SIDE_HERO_LOCK_PATCH}${FRAMER_FORM_INTERCEPT_PATCH}${HERO_CTA_PATCH}${HOMEPAGE_INTRO_IMAGE_SWAP_PATCH}${PAGE_VISIBILITY_GUARD_PATCH}</body>`)
+  html = html.replace('</body>', `${SPLIT_TEXT_PATCH}${BRAND_PATCH}${SQUARE_IMAGES_PATCH}${SERVICES_ANCHOR_PATCH}${MAIN_NAV_PATCH}${ENGINEERING_SERVICE_PATCH}${PROJECT_CARDS_PATCH}${DESIGN_PANELS_PATCH}${RESIDENTIAL_ROW_IMAGE_PATCH}${BLUEPRINT_IMAGE_PATCH}${PROCESS_TILE_IMAGE_PATCH}${CARD_ROUTING_PATCH}${EXTRA_CARD_CLEANUP_PATCH}${SERVICE_DROPDOWN_PATCH}${PROJECT_TYPE_SECTION_PATCH}${FOOTER_PATCH}${FOOTER_NAV_PATCH}${FACEBOOK_SOCIAL_PATCH}${ICON_BAR_PATCH}${TESTIMONIAL_PATCH}${HOMEPAGE_MOBILE_HERO_CROP}${HOMEPAGE_HERO_LOCK_PATCH}${HOMEPAGE_SIDE_HERO_LOCK_PATCH}${FRAMER_FORM_INTERCEPT_PATCH}${HERO_CTA_PATCH}${HOMEPAGE_INTRO_IMAGE_SWAP_PATCH}${PAGE_VISIBILITY_GUARD_PATCH}</body>`)
 
   const headers = new Headers(response.headers)
   headers.set('Content-Type', 'text/html; charset=utf-8')
