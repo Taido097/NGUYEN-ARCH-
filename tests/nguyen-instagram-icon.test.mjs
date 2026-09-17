@@ -37,3 +37,11 @@ test('keeps only Instagram in the Social Media icon row', async () => {
   assert.match(source, /a:not\(\[data-framer-name="InstagramLogo"\]\)/)
   assert.match(source, /social\.querySelectorAll\(removeSelector\)\.forEach\(\(icon\) => icon\.remove\(\)\)/)
 })
+
+
+test('removes non-Instagram social links from the server-rendered page before a tap can occur', async () => {
+  const source = await readFile(socalRoutePath, 'utf8')
+  assert.match(source, /const NON_INSTAGRAM_SOCIAL_ANCHOR_RE =/)
+  assert.match(source, /html = html\.replace\(NON_INSTAGRAM_SOCIAL_ANCHOR_RE, ''\)/)
+  assert.match(source, /LinkedinLogo\|PinterestLogo\|Behance/)
+})
