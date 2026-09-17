@@ -2606,6 +2606,26 @@ const PAGE_VISIBILITY_GUARD_PATCH = `
 })();
 </script>`
 
+
+const SOCIAL_MEDIA_INSTAGRAM_ONLY_PATCH = \`
+<script id="nguyen-social-instagram-only">
+(() => {
+  const SOCIAL_MEDIA_SELECTOR = '[data-framer-name="Social Media"]';
+
+  function patchSocialMedia() {
+    const social = document.querySelector(SOCIAL_MEDIA_SELECTOR);
+    if (!social) return;
+    const removeSelector = 'a:not([data-framer-name="InstagramLogo"])';
+    social.querySelectorAll(removeSelector).forEach((icon) => icon.remove());
+  }
+
+  patchSocialMedia();
+  window.addEventListener('load', patchSocialMedia, { once: true });
+  const observer = new MutationObserver(patchSocialMedia);
+  if (document.body) observer.observe(document.body, { childList: true, subtree: true });
+})();
+</script>\`
+
 export async function GET() {
   const response = await getConcept()
   if (!response.ok) return response
@@ -2904,7 +2924,7 @@ export async function GET() {
   // "NGUYEN", so cover both the raw and post-rebrand forms (harmless if client-rendered).
   html = html.replace(/hello@(?:arcsphere|nguyen)studio\.ae/gi, 'info@nguyenarchitecture.com')
   html = html.replace('</head>', `${FOOTER_FIRST_PAINT_STYLE}</head>`)
-  html = html.replace('</body>', `${SPLIT_TEXT_PATCH}${BRAND_PATCH}${SQUARE_IMAGES_PATCH}${SERVICES_ANCHOR_PATCH}${MAIN_NAV_PATCH}${ENGINEERING_SERVICE_PATCH}${PROJECT_CARDS_PATCH}${DESIGN_PANELS_PATCH}${RESIDENTIAL_ROW_IMAGE_PATCH}${BLUEPRINT_IMAGE_PATCH}${PROCESS_TILE_IMAGE_PATCH}${CARD_ROUTING_PATCH}${EXTRA_CARD_CLEANUP_PATCH}${SERVICE_DROPDOWN_PATCH}${PROJECT_TYPE_SECTION_PATCH}${FOOTER_PATCH}${FOOTER_NAV_PATCH}${FACEBOOK_SOCIAL_PATCH}${INSTAGRAM_SOCIAL_PATCH}${ICON_BAR_PATCH}${TESTIMONIAL_PATCH}${HOMEPAGE_MOBILE_HERO_CROP}${HOMEPAGE_HERO_LOCK_PATCH}${HOMEPAGE_SIDE_HERO_LOCK_PATCH}${FRAMER_FORM_INTERCEPT_PATCH}${HERO_CTA_PATCH}${HOMEPAGE_INTRO_IMAGE_SWAP_PATCH}${PAGE_VISIBILITY_GUARD_PATCH}</body>`)
+  html = html.replace('</body>', `${SPLIT_TEXT_PATCH}${BRAND_PATCH}${SQUARE_IMAGES_PATCH}${SERVICES_ANCHOR_PATCH}${MAIN_NAV_PATCH}${ENGINEERING_SERVICE_PATCH}${PROJECT_CARDS_PATCH}${DESIGN_PANELS_PATCH}${RESIDENTIAL_ROW_IMAGE_PATCH}${BLUEPRINT_IMAGE_PATCH}${PROCESS_TILE_IMAGE_PATCH}${CARD_ROUTING_PATCH}${EXTRA_CARD_CLEANUP_PATCH}${SERVICE_DROPDOWN_PATCH}${PROJECT_TYPE_SECTION_PATCH}${FOOTER_PATCH}${FOOTER_NAV_PATCH}${FACEBOOK_SOCIAL_PATCH}${INSTAGRAM_SOCIAL_PATCH}${SOCIAL_MEDIA_INSTAGRAM_ONLY_PATCH}${ICON_BAR_PATCH}${TESTIMONIAL_PATCH}${HOMEPAGE_MOBILE_HERO_CROP}${HOMEPAGE_HERO_LOCK_PATCH}${HOMEPAGE_SIDE_HERO_LOCK_PATCH}${FRAMER_FORM_INTERCEPT_PATCH}${HERO_CTA_PATCH}${HOMEPAGE_INTRO_IMAGE_SWAP_PATCH}${PAGE_VISIBILITY_GUARD_PATCH}</body>`)
 
   const headers = new Headers(response.headers)
   headers.set('Content-Type', 'text/html; charset=utf-8')
