@@ -1,11 +1,12 @@
 import { buildContactDetails, getContactRecipient, type InquiryType } from './routing';
 
-// Every submission is emailed to these three addresses when the form does not send a typed
-// inquiryType (e.g. the Framer homepage form). Typed inquiries route via getContactRecipient.
-const DEFAULT_RECIPIENTS = [
+// Every submission is emailed to all three addresses. Sending from the verified
+// nguyenarchitecture.com domain (via Resend) is what lets the two @nguyenarchitecture.com
+// mailboxes actually receive — an Apps Script / Gmail sender gets filtered by that domain.
+const RECIPIENTS = [
   'info@nguyenarchitecture.com',
-  'taido097@gmail.com',
   'consultant@nguyenarchitecture.com',
+  'taido097@gmail.com',
 ];
 
 // From address. Must be on a domain verified in Resend (nguyenarchitecture.com).
@@ -60,15 +61,12 @@ function buildHtml(fields: ContactFields, detailBody: string) {
 
 // Build the full Resend request payload from validated fields. Pure — no network — so it can be tested.
 export function buildEmailPayload(fields: ContactFields) {
-  let recipients = DEFAULT_RECIPIENTS;
   let detailBody = fields.message;
 
   if (fields.inquiryType) {
-    // Throws for an unknown inquiry type — caller maps that to a 400.
-    recipients = getContactRecipient(fields.inquiryType)
-      .split(',')
-      .map((r) => r.trim())
-      .filter(Boolean);
+    // Validate the inquiry type (throws for an unknown one — caller maps that to a 400) and
+    // build a richer body. Recipients stay all three regardless of type.
+    getContactRecipient(fields.inquiryType);
     detailBody = buildContactDetails({
       inquiryType: fields.inquiryType as InquiryType,
       projectType: fields.projectType,
@@ -89,7 +87,7 @@ export function buildEmailPayload(fields: ContactFields) {
 
   return {
     from: FROM,
-    to: recipients,
+    to: RECIPIENTS,
     reply_to: fields.email,
     subject: `New architecture project inquiry from ${fields.name}`,
     html: buildHtml(fields, detailBody),

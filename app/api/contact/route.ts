@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getContactRecipient } from './routing';
+import { buildEmailPayload, sendViaResend } from './email';
 
 export const runtime = 'nodejs';
 
@@ -101,6 +102,40 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(
         { error: 'Please enter a valid phone number.' },
         { status: 400 }
+      );
+    }
+
+    // Prefer Resend: it sends from the verified nguyenarchitecture.com domain, so the
+    // @nguyenarchitecture.com mailboxes actually receive (an Apps Script/Gmail sender is filtered
+    // by that domain, which is why only the gmail recipient was getting the form emails). Falls
+    // through to Apps Script below only when no Resend key is set, so there is no regression.
+    if (process.env.RESEND_API_KEY) {
+      let payload;
+      try {
+        payload = buildEmailPayload({
+          name,
+          email,
+          phone,
+          company,
+          message,
+          inquiryType,
+          projectType,
+          budget,
+        });
+      } catch {
+        return NextResponse.json(
+          { error: 'Please select a valid inquiry type.' },
+          { status: 400 }
+        );
+      }
+
+      const result = await sendViaResend(payload);
+      if (!result.ok) {
+        return NextResponse.json({ error: result.error }, { status: 502 });
+      }
+      return NextResponse.json(
+        { success: true, message: 'Your request was sent successfully.' },
+        { status: 200 }
       );
     }
 
