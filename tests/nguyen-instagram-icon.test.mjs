@@ -33,6 +33,7 @@ test('keeps only Instagram in the Social Media icon row', async () => {
   const source = await readFile(socalRoutePath, 'utf8')
   assert.match(source, /const SOCIAL_MEDIA_INSTAGRAM_ONLY_PATCH = \`/)
   assert.match(source, /const SOCIAL_MEDIA_SELECTOR = '\[data-framer-name="Social Media"\]'/)
+  assert.match(source, /document\.querySelectorAll\(SOCIAL_MEDIA_SELECTOR\)\.forEach\(\(social\) =>/)
   assert.match(source, /a:not\(\[data-framer-name="InstagramLogo"\]\)/)
   assert.match(source, /social\.querySelectorAll\(removeSelector\)\.forEach\(\(icon\) => icon\.remove\(\)\)/)
 })
