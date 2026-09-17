@@ -2613,10 +2613,10 @@ const SOCIAL_MEDIA_INSTAGRAM_ONLY_PATCH = `
   const SOCIAL_MEDIA_SELECTOR = '[data-framer-name="Social Media"]';
 
   function patchSocialMedia() {
-    const social = document.querySelector(SOCIAL_MEDIA_SELECTOR);
-    if (!social) return;
     const removeSelector = 'a:not([data-framer-name="InstagramLogo"])';
-    social.querySelectorAll(removeSelector).forEach((icon) => icon.remove());
+    document.querySelectorAll(SOCIAL_MEDIA_SELECTOR).forEach((social) => {
+      social.querySelectorAll(removeSelector).forEach((icon) => icon.remove());
+    });
   }
 
   patchSocialMedia();
