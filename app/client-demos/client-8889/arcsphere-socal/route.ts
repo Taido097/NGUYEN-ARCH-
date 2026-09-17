@@ -2950,13 +2950,16 @@ export async function GET() {
     if (!banner) {
       banner = document.createElement('div');
       banner.className = 'nf-banner';
-      banner.style.cssText = 'margin-top:16px;padding:14px 18px;border-radius:6px;font-size:14px;font-weight:500;line-height:1.5;';
+      banner.style.cssText = 'margin-top:18px;padding:16px 20px;border-radius:8px;font-size:15px;font-weight:600;line-height:1.5;border:1px solid transparent;';
       container.appendChild(banner);
     }
     banner.style.background = success ? '#d4edda' : '#f8d7da';
     banner.style.color = success ? '#155724' : '#721c24';
+    banner.style.borderColor = success ? '#b7dfc0' : '#f1c2c7';
     banner.textContent = msg;
     banner.hidden = false;
+    // Scroll the confirmation into view so the submitter clearly sees that it was sent.
+    try { banner.scrollIntoView({ behavior: 'smooth', block: 'center' }); } catch (e) {}
   }
 
   function resetContainer(container) {
@@ -2989,7 +2992,7 @@ export async function GET() {
       const res = await fetch(API, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(fields) });
       const json = await res.json().catch(() => ({}));
       if (res.ok && json.success) {
-        showBanner(container, true, 'Thank you \\u2014 we received your inquiry and will be in touch within 1\\u20132 business days.');
+        showBanner(container, true, '\\u2713 Your message has been sent \\u2014 thank you! We will be in touch within 1\\u20132 business days.');
         resetContainer(container);
       } else {
         showBanner(container, false, json.error || 'Something went wrong. Please try again or call us directly.');
