@@ -45,3 +45,12 @@ test('removes non-Instagram social links from the server-rendered page before a 
   assert.match(source, /html = html\.replace\(NON_INSTAGRAM_SOCIAL_ANCHOR_RE, ''\)/)
   assert.match(source, /LinkedinLogo\|PinterestLogo\|Behance/)
 })
+
+
+test('prevents Social Media taps from entering the Custom Homes card router', async () => {
+  const source = await readFile(socalRoutePath, 'utf8')
+  const socialGuard = source.indexOf(`if (start?.closest?.('[data-framer-name="Social Media"]')) return;`)
+  const cardLookup = source.indexOf("const card = start && start.closest ? start.closest('[data-nguyen-card-url]') : null;")
+  assert.ok(socialGuard >= 0, 'Social Media must be excluded from card routing')
+  assert.ok(cardLookup >= 0 && socialGuard < cardLookup, 'Social Media exclusion must run before card lookup')
+})
