@@ -2607,7 +2607,7 @@ const PAGE_VISIBILITY_GUARD_PATCH = `
 </script>`
 
 
-const SOCIAL_MEDIA_INSTAGRAM_ONLY_PATCH = \`
+const SOCIAL_MEDIA_INSTAGRAM_ONLY_PATCH = `
 <script id="nguyen-social-instagram-only">
 (() => {
   const SOCIAL_MEDIA_SELECTOR = '[data-framer-name="Social Media"]';
@@ -2624,7 +2624,7 @@ const SOCIAL_MEDIA_INSTAGRAM_ONLY_PATCH = \`
   const observer = new MutationObserver(patchSocialMedia);
   if (document.body) observer.observe(document.body, { childList: true, subtree: true });
 })();
-</script>\`
+</script>`
 
 export async function GET() {
   const response = await getConcept()
