@@ -1870,6 +1870,22 @@ const FACEBOOK_SOCIAL_PATCH = `
     insta.insertAdjacentElement('afterend', fb);
   }
 
+  // Guard the Facebook link against every capture-phase click hijacker on the page (the base
+  // layer's fixNav, the footer router, the card router). Registered on window in the capture
+  // phase, this runs before all of them; stopImmediatePropagation blocks their redirects while
+  // leaving the anchor's own href navigation to the Facebook page intact.
+  if (!window.__nguyenFacebookClickGuard) {
+    window.__nguyenFacebookClickGuard = true;
+    ['click', 'pointerdown', 'mousedown', 'touchstart', 'auxclick'].forEach((type) => {
+      window.addEventListener(type, (e) => {
+        const t = e.target;
+        if (t && t.closest && t.closest('[data-nguyen-facebook-icon="true"]')) {
+          if (e.stopImmediatePropagation) e.stopImmediatePropagation();
+        }
+      }, true);
+    });
+  }
+
   addFacebook();
   window.addEventListener('load', addFacebook, { once: true });
   [200, 600, 1500, 3000].forEach((t) => setTimeout(addFacebook, t));
