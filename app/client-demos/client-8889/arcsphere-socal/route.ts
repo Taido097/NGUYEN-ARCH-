@@ -1756,9 +1756,8 @@ const FACEBOOK_SOCIAL_PATCH = `
 (() => {
   const FB_URL = '${NGUYEN_FACEBOOK_URL}';
   const SVG_NS = 'http://www.w3.org/2000/svg';
-  // Thin "f" outline. Always drawn as a stroke so Facebook matches Instagram's line weight
-  // instead of a heavy filled disc, whether or not the Instagram glyph itself is filled.
-  const FB_STROKE_PATH = 'M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z';
+  // Solid Facebook mark (filled circle "f") to match the filled Instagram icon.
+  const FB_PATH = 'M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z';
 
   function real(v) { return v && v !== 'none' && v !== 'transparent' && v !== 'rgba(0, 0, 0, 0)'; }
 
@@ -1787,12 +1786,8 @@ const FACEBOOK_SOCIAL_PATCH = `
 
   function makePath(style) {
     const p = document.createElementNS(SVG_NS, 'path');
-    p.setAttribute('d', FB_STROKE_PATH);
-    p.setAttribute('fill', 'none');
-    p.setAttribute('stroke', style.color);
-    p.setAttribute('stroke-width', style.strokeWidth);
-    p.setAttribute('stroke-linecap', style.linecap);
-    p.setAttribute('stroke-linejoin', style.linejoin);
+    p.setAttribute('d', FB_PATH);
+    p.setAttribute('fill', style.color);
     return p;
   }
 
@@ -1801,7 +1796,7 @@ const FACEBOOK_SOCIAL_PATCH = `
     if (svg) {
       while (svg.firstChild) svg.removeChild(svg.firstChild);
       svg.setAttribute('viewBox', '0 0 24 24');
-      svg.setAttribute('fill', 'none');
+      svg.removeAttribute('fill');
       svg.appendChild(makePath(style));
       return;
     }
@@ -1809,7 +1804,7 @@ const FACEBOOK_SOCIAL_PATCH = `
     if (img) {
       const w = img.getAttribute('width') || '24';
       const h = img.getAttribute('height') || '24';
-      const glyph = '<path d="' + FB_STROKE_PATH + '" fill="none" stroke="' + style.color + '" stroke-width="' + style.strokeWidth + '" stroke-linecap="' + style.linecap + '" stroke-linejoin="' + style.linejoin + '"/>';
+      const glyph = '<path d="' + FB_PATH + '" fill="' + style.color + '"/>';
       const raw = '<svg xmlns="' + SVG_NS + '" viewBox="0 0 24 24" width="' + w + '" height="' + h + '">' + glyph + '</svg>';
       img.setAttribute('src', 'data:image/svg+xml;utf8,' + encodeURIComponent(raw));
       img.setAttribute('alt', 'Facebook');
@@ -1819,7 +1814,6 @@ const FACEBOOK_SOCIAL_PATCH = `
     s.setAttribute('viewBox', '0 0 24 24');
     s.setAttribute('width', '24');
     s.setAttribute('height', '24');
-    s.setAttribute('fill', 'none');
     s.appendChild(makePath(style));
     clone.appendChild(s);
   }
