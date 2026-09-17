@@ -1747,25 +1747,87 @@ footer > .nguyen-footer-links > :is(a, button):focus-visible { text-decoration: 
 
 const NGUYEN_FACEBOOK_URL = 'https://www.facebook.com/p/Nguyen-Architecture-100067629215747/'
 
+// Add a Facebook icon beside Instagram by cloning the Instagram anchor (so size, color, spacing
+// and hover match exactly), then swapping its glyph to the Facebook mark. The clone is marked
+// data-nguyen-facebook-icon so SOCIAL_MEDIA_INSTAGRAM_ONLY_PATCH keeps it, and it sits inside the
+// Social Media section, so the card router already ignores clicks on it.
 const FACEBOOK_SOCIAL_PATCH = `
-<script id="nguyen-facebook-social">
+<script id="nguyen-facebook-icon">
 (() => {
-  const compact = (value) => (value || '').replace(/\\s+/g, '').toLowerCase();
-  function replacePinterest() {
-    document.querySelectorAll('footer a').forEach((link) => {
-      const key = compact(link.textContent);
-      if (key !== 'pinterest' && key !== 'pinterestpinterest') return;
-      link.setAttribute('href', '${NGUYEN_FACEBOOK_URL}');
-      link.setAttribute('target', '_blank');
-      link.setAttribute('rel', 'noopener noreferrer');
-      link.setAttribute('aria-label', 'Nguyen Architecture on Facebook');
-      link.setAttribute('data-nguyen-facebook-link', 'true');
-      link.querySelectorAll('p').forEach((label) => { label.textContent = 'facebook'; });
-    });
+  const FB_URL = '${NGUYEN_FACEBOOK_URL}';
+  const SVG_NS = 'http://www.w3.org/2000/svg';
+  const FB_PATH = 'M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z';
+
+  // Read the Instagram icon's rendered color so Facebook matches it exactly.
+  function readFill(insta) {
+    const svg = insta.querySelector('svg');
+    if (!svg) return 'currentColor';
+    const mark = svg.querySelector('path, use, polygon, rect, circle');
+    let fill = (mark && mark.getAttribute('fill')) || svg.getAttribute('fill') || '';
+    if (!fill || fill === 'currentColor') {
+      try {
+        const cs = getComputedStyle(mark || svg);
+        if (cs && cs.fill && cs.fill !== 'none' && cs.fill !== 'rgba(0, 0, 0, 0)') fill = cs.fill;
+      } catch (e) {}
+    }
+    return fill || 'currentColor';
   }
-  replacePinterest();
-  window.addEventListener('load', replacePinterest, { once: true });
-  const observer = new MutationObserver(replacePinterest);
+
+  function paintFacebook(clone, fill) {
+    const svg = clone.querySelector('svg');
+    if (svg) {
+      while (svg.firstChild) svg.removeChild(svg.firstChild);
+      svg.setAttribute('viewBox', '0 0 24 24');
+      const p = document.createElementNS(SVG_NS, 'path');
+      p.setAttribute('d', FB_PATH);
+      p.setAttribute('fill', fill);
+      svg.appendChild(p);
+      return;
+    }
+    const img = clone.querySelector('img');
+    if (img) {
+      const w = img.getAttribute('width') || '24';
+      const h = img.getAttribute('height') || '24';
+      const raw = '<svg xmlns="' + SVG_NS + '" viewBox="0 0 24 24" width="' + w + '" height="' + h + '"><path fill="' + fill + '" d="' + FB_PATH + '"/></svg>';
+      img.setAttribute('src', 'data:image/svg+xml;utf8,' + encodeURIComponent(raw));
+      img.setAttribute('alt', 'Facebook');
+      return;
+    }
+    const s = document.createElementNS(SVG_NS, 'svg');
+    s.setAttribute('viewBox', '0 0 24 24');
+    s.setAttribute('width', '24');
+    s.setAttribute('height', '24');
+    const p = document.createElementNS(SVG_NS, 'path');
+    p.setAttribute('d', FB_PATH);
+    p.setAttribute('fill', fill);
+    s.appendChild(p);
+    clone.appendChild(s);
+  }
+
+  function addFacebook() {
+    const insta = document.querySelector('a[data-framer-name="InstagramLogo"]');
+    if (!insta || !insta.parentElement) return;
+    if (insta.parentElement.querySelector('[data-nguyen-facebook-icon="true"]')) return;
+
+    const fill = readFill(insta);
+    const fb = insta.cloneNode(true);
+    fb.setAttribute('data-nguyen-facebook-icon', 'true');
+    fb.removeAttribute('data-framer-name');
+    fb.removeAttribute('data-nguyen-instagram-icon');
+    fb.removeAttribute('data-nguyen-card-url');
+    fb.removeAttribute('data-nguyen-routed');
+    fb.setAttribute('href', FB_URL);
+    fb.setAttribute('target', '_blank');
+    fb.setAttribute('rel', 'noopener noreferrer');
+    fb.setAttribute('aria-label', 'Nguyen Architecture on Facebook');
+    paintFacebook(fb, fill);
+    insta.insertAdjacentElement('afterend', fb);
+  }
+
+  addFacebook();
+  window.addEventListener('load', addFacebook, { once: true });
+  [200, 600, 1500, 3000].forEach((t) => setTimeout(addFacebook, t));
+  const observer = new MutationObserver(addFacebook);
   if (document.body) observer.observe(document.body, { childList: true, subtree: true });
 })();
 </script>`
@@ -2615,7 +2677,7 @@ const SOCIAL_MEDIA_INSTAGRAM_ONLY_PATCH = `
   const SOCIAL_MEDIA_SELECTOR = '[data-framer-name="Social Media"]';
 
   function patchSocialMedia() {
-    const removeSelector = 'a:not([data-framer-name="InstagramLogo"])';
+    const removeSelector = 'a:not([data-framer-name="InstagramLogo"]):not([data-nguyen-facebook-icon="true"])';
     document.querySelectorAll(SOCIAL_MEDIA_SELECTOR).forEach((social) => {
       social.querySelectorAll(removeSelector).forEach((icon) => icon.remove());
     });
