@@ -1817,9 +1817,22 @@ const FACEBOOK_SOCIAL_PATCH = `
   function addFacebook() {
     const insta = document.querySelector('a[data-framer-name="InstagramLogo"]');
     if (!insta || !insta.parentElement) return;
-    if (insta.parentElement.querySelector('[data-nguyen-facebook-icon="true"]')) return;
 
     const paint = readPaint(insta);
+    const key = paint.fill + '|' + paint.fillOpacity + '|' + paint.opacity;
+
+    // If the icon already exists, only re-apply the paint when the detected shade changed
+    // (Framer may style the Instagram glyph after our first pass). The key guard stops the
+    // MutationObserver from looping on our own repaint once the shade is stable.
+    const existing = insta.parentElement.querySelector('[data-nguyen-facebook-icon="true"]');
+    if (existing) {
+      if (existing.__nguyenPaintKey !== key) {
+        existing.__nguyenPaintKey = key;
+        paintFacebook(existing, paint);
+      }
+      return;
+    }
+
     const fb = insta.cloneNode(true);
     fb.setAttribute('data-nguyen-facebook-icon', 'true');
     fb.removeAttribute('data-framer-name');
@@ -1830,6 +1843,7 @@ const FACEBOOK_SOCIAL_PATCH = `
     fb.setAttribute('target', '_blank');
     fb.setAttribute('rel', 'noopener noreferrer');
     fb.setAttribute('aria-label', 'Nguyen Architecture on Facebook');
+    fb.__nguyenPaintKey = key;
     paintFacebook(fb, paint);
     insta.insertAdjacentElement('afterend', fb);
   }
