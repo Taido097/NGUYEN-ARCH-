@@ -1355,11 +1355,16 @@ const FOOTER_PATCH = `
       }
     }
 
+    // Capture the Address text's rendered color and weight so the Email rows can match it.
+    let addrColor = '', addrWeight = '';
     document.querySelectorAll('div,span,p,a,h1,h2,h3,h4,h5,h6,li').forEach((el) => {
       const text = compact(el.textContent);
-      if (!isAddrEl(text)) return;
-      if (Array.from(el.children).some((child) => isAddrEl(compact(child.textContent)))) return;
+      const isAddr = isAddrEl(text) || normalize(el.textContent) === NEW_ADDR;
+      if (!isAddr) return;
+      if (Array.from(el.children).some((child) => isAddrEl(compact(child.textContent)) || normalize(child.textContent) === NEW_ADDR)) return;
       if (normalize(el.textContent) !== NEW_ADDR) el.textContent = NEW_ADDR;
+      el.setAttribute('data-nguyen-footer-addr', '1');
+      try { const cs = getComputedStyle(el); if (cs) { addrColor = cs.color; addrWeight = cs.fontWeight; } } catch (e) {}
     });
 
     document.querySelectorAll('div,span,p,li').forEach((el) => {
@@ -1405,9 +1410,18 @@ const FOOTER_PATCH = `
       const collaborationText = 'Collaboration: ' + NEW_EMAIL;
       const consultationRow = label.querySelector('[data-nguyen-footer-email="consultations"]');
       const collaborationRow = label.querySelector('[data-nguyen-footer-email="collaboration"]');
+      const applyShade = (row) => {
+        if (!row) return;
+        row.style.setProperty('font-weight', addrWeight || '400', 'important');
+        if (addrColor) row.style.setProperty('color', addrColor, 'important');
+      };
       if (consultationRow && collaborationRow &&
           consultationRow.textContent === consultationText &&
-          collaborationRow.textContent === collaborationText) return;
+          collaborationRow.textContent === collaborationText) {
+        applyShade(consultationRow);
+        applyShade(collaborationRow);
+        return;
+      }
 
       const makeRow = (kind, text) => {
         const row = document.createElement('p');
@@ -1418,7 +1432,8 @@ const FOOTER_PATCH = `
         row.style.setProperty('margin', '0', 'important');
         row.style.setProperty('font-family', '"Inter Display", "Inter Display Placeholder", sans-serif', 'important');
         row.style.setProperty('font-size', '12px', 'important');
-        row.style.setProperty('font-weight', '500', 'important');
+        row.style.setProperty('font-weight', addrWeight || '400', 'important');
+        if (addrColor) row.style.setProperty('color', addrColor, 'important');
         row.style.setProperty('line-height', '150%', 'important');
         row.style.setProperty('text-transform', 'none', 'important');
         row.style.setProperty('letter-spacing', 'normal', 'important');
