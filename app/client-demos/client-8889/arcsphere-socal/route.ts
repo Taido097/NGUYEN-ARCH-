@@ -1870,20 +1870,30 @@ const FACEBOOK_SOCIAL_PATCH = `
     insta.insertAdjacentElement('afterend', fb);
   }
 
-  // Guard the Facebook link against every capture-phase click hijacker on the page (the base
-  // layer's fixNav, the footer router, the card router). Registered on window in the capture
-  // phase, this runs before all of them; stopImmediatePropagation blocks their redirects while
-  // leaving the anchor's own href navigation to the Facebook page intact.
+  // Own the Facebook icon's click outright. The social row is nested inside a routable card and
+  // the footer, so several capture-phase handlers (the base layer's fixNav, the footer router,
+  // the card router / findLink) try to send the click elsewhere. Registered on window in the
+  // capture phase, these run before every document-level handler: they block the hijackers and
+  // navigate to the Facebook page directly, so it does not matter if another script rewrote the
+  // anchor href — the destination is fixed here.
   if (!window.__nguyenFacebookClickGuard) {
     window.__nguyenFacebookClickGuard = true;
-    ['click', 'pointerdown', 'mousedown', 'touchstart', 'auxclick'].forEach((type) => {
+    const inFacebook = (t) => !!(t && t.closest && t.closest('[data-nguyen-facebook-icon="true"]'));
+    ['pointerdown', 'mousedown', 'touchstart', 'pointerup', 'mouseup', 'auxclick'].forEach((type) => {
       window.addEventListener(type, (e) => {
-        const t = e.target;
-        if (t && t.closest && t.closest('[data-nguyen-facebook-icon="true"]')) {
-          if (e.stopImmediatePropagation) e.stopImmediatePropagation();
-        }
+        if (inFacebook(e.target) && e.stopImmediatePropagation) e.stopImmediatePropagation();
       }, true);
     });
+    window.addEventListener('click', (e) => {
+      if (!inFacebook(e.target)) return;
+      e.preventDefault();
+      if (e.stopImmediatePropagation) e.stopImmediatePropagation();
+      // Not window.open(..., 'noopener'): that returns null even on success and would trip the
+      // fallback into a second navigation. Open normally, then sever the opener reference.
+      const win = window.open(FB_URL, '_blank');
+      if (win) { try { win.opener = null; } catch (err) {} }
+      else window.location.href = FB_URL;
+    }, true);
   }
 
   addFacebook();
