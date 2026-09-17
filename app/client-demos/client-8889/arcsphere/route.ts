@@ -425,7 +425,7 @@ const CLIENT_PATCH = `
     var home = window.location.origin + window.location.pathname;
     var navLinks = document.querySelectorAll('nav a, [data-framer-name] a');
     navLinks.forEach(function(a){
-      if (a.matches('a[data-framer-name="InstagramLogo"]')) return;
+      if (a.matches('a[data-framer-name="InstagramLogo"], [data-nguyen-facebook-icon]')) return;
       // Skip footer links — handled by FOOTER_NAV_PATCH in the socal layer
       if (isInFooter(a)) return;
       var text = (a.textContent || '').trim().toLowerCase().replace(/\s+/g,' ');
