@@ -379,7 +379,7 @@ const CLIENT_PATCH = `
     window.__nguyenServiceLinkInterceptor = true;
     const findLink = (event) => {
       const start = event.target && event.target.nodeType === Node.TEXT_NODE ? event.target.parentElement : event.target;
-      if (start?.closest?.('a[data-framer-name="InstagramLogo"]')) return null;
+      if (start?.closest?.('a[data-framer-name="InstagramLogo"], [data-nguyen-facebook-icon], [data-framer-name="Social Media"]')) return null;
       return start && start.closest ? start.closest('[data-nguyen-link]') : null;
     };
     // Block Framer's own tap/modal handlers before they fire.
