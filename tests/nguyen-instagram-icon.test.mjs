@@ -11,14 +11,15 @@ test('ships the Nguyen Instagram URL on the rendered icon before browser scripts
   assert.match(source, /html = html\.replace\(INSTAGRAM_ICON_HREF_RE, \`\$1\$\{NGUYEN_INSTAGRAM_URL\}\$2\`\)/)
 })
 
-test('base service routing ignores the Instagram icon', async () => {
-  const source = await readFile(baseRoutePath, 'utf8')
-  assert.match(source, /if \(start\?\.closest\?\.\('a\[data-framer-name="InstagramLogo"\]'\)\) return null;/)
-})
+test('all three earlier routing layers ignore the Instagram icon', async () => {
+  const [base, socal] = await Promise.all([
+    readFile(baseRoutePath, 'utf8'),
+    readFile(socalRoutePath, 'utf8'),
+  ])
 
-test('base navigation does not attach a home-route click listener to the Instagram icon', async () => {
-  const source = await readFile(baseRoutePath, 'utf8')
-  assert.match(source, /if \(a\.matches\('a\[data-framer-name="InstagramLogo"\]'\)\) return;/)
+  assert.match(base, /if \(start\?\.closest\?\.\('a\[data-framer-name="InstagramLogo"\]'\)\) return null;/)
+  assert.match(base, /if \(a\.matches\('a\[data-framer-name="InstagramLogo"\]'\)\) return;/)
+  assert.match(socal, /if \(start\?\.closest\?\.\('a\[data-framer-name="InstagramLogo"\]'\)\) return;/)
 })
 
 test('keeps the browser guard for Framer hydration changes', async () => {
