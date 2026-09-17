@@ -379,6 +379,7 @@ const CLIENT_PATCH = `
     window.__nguyenServiceLinkInterceptor = true;
     const findLink = (event) => {
       const start = event.target && event.target.nodeType === Node.TEXT_NODE ? event.target.parentElement : event.target;
+      if (start?.closest?.('a[data-framer-name="InstagramLogo"]')) return null;
       return start && start.closest ? start.closest('[data-nguyen-link]') : null;
     };
     // Block Framer's own tap/modal handlers before they fire.
@@ -424,6 +425,7 @@ const CLIENT_PATCH = `
     var home = window.location.origin + window.location.pathname;
     var navLinks = document.querySelectorAll('nav a, [data-framer-name] a');
     navLinks.forEach(function(a){
+      if (a.matches('a[data-framer-name="InstagramLogo"]')) return;
       // Skip footer links — handled by FOOTER_NAV_PATCH in the socal layer
       if (isInFooter(a)) return;
       var text = (a.textContent || '').trim().toLowerCase().replace(/\s+/g,' ');
