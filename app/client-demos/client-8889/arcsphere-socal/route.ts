@@ -1756,8 +1756,12 @@ const FACEBOOK_SOCIAL_PATCH = `
 (() => {
   const FB_URL = '${NGUYEN_FACEBOOK_URL}';
   const SVG_NS = 'http://www.w3.org/2000/svg';
-  // Solid Facebook mark (filled circle "f") to match the filled Instagram icon.
+  // Solid Facebook mark (filled circle "f"). A solid disc reads heavier than Instagram's
+  // outline glyph, so it is shrunk within its box (FB_PAD) and its fill softened (FB_LIGHTEN)
+  // to bring the two icons to a matching visual weight.
   const FB_PATH = 'M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z';
+  const FB_PAD = 2.4;      // viewBox padding per side: shrinks the disc to ~83% of Instagram's box
+  const FB_LIGHTEN = 0.88; // multiply the inherited opacity to lighten the solid fill a touch
 
   function real(v) { return v && v !== 'none' && v !== 'transparent' && v !== 'rgba(0, 0, 0, 0)'; }
 
@@ -1804,12 +1808,15 @@ const FACEBOOK_SOCIAL_PATCH = `
       else clone.appendChild(svg);
     }
     while (svg.firstChild) svg.removeChild(svg.firstChild);
-    svg.setAttribute('viewBox', '0 0 24 24');
+    // Pad the viewBox so the 24-unit disc renders smaller (and centered) inside the icon's box.
+    const box = 24 + FB_PAD * 2;
+    svg.setAttribute('viewBox', -FB_PAD + ' ' + -FB_PAD + ' ' + box + ' ' + box);
     svg.removeAttribute('fill');
     const p = document.createElementNS(SVG_NS, 'path');
     p.setAttribute('d', FB_PATH);
     p.setAttribute('fill', paint.fill);
-    if (paint.fillOpacity) p.setAttribute('fill-opacity', paint.fillOpacity);
+    const baseFO = paint.fillOpacity ? parseFloat(paint.fillOpacity) : 1;
+    p.setAttribute('fill-opacity', String(Math.round(baseFO * FB_LIGHTEN * 1000) / 1000));
     if (paint.opacity) p.setAttribute('opacity', paint.opacity);
     svg.appendChild(p);
   }
