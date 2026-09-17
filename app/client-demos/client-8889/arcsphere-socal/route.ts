@@ -1761,30 +1761,37 @@ const FACEBOOK_SOCIAL_PATCH = `
 
   function real(v) { return v && v !== 'none' && v !== 'transparent' && v !== 'rgba(0, 0, 0, 0)'; }
 
-  // Read the Instagram icon's exact rendered color (computed, so it matches whatever the
-  // page actually paints) so the Facebook fill is the same shade.
-  function exactColor(insta) {
+  // Read the Instagram icon's exact rendered paint (computed color AND opacity), so a reduced
+  // opacity on the glyph doesn't leave the solid Facebook fill looking darker at full opacity.
+  function readPaint(insta) {
+    const out = { fill: 'currentColor', fillOpacity: '', opacity: '' };
     const svg = insta.querySelector('svg');
     const mark = (svg && svg.querySelector('path, polygon, rect, circle, ellipse, line, polyline, use')) || svg;
     if (mark) {
-      let fill = '';
-      try { fill = getComputedStyle(mark).fill; } catch (e) {}
-      if (real(fill)) return fill;
-      let stroke = '';
-      try { stroke = getComputedStyle(mark).stroke; } catch (e) {}
-      if (real(stroke)) return stroke;
-      const af = mark.getAttribute && mark.getAttribute('fill');
-      if (real(af)) return af;
+      try {
+        const cs = getComputedStyle(mark);
+        if (cs) {
+          if (real(cs.fill)) out.fill = cs.fill;
+          else if (real(cs.stroke)) out.fill = cs.stroke;
+          if (cs.fillOpacity && cs.fillOpacity !== '1') out.fillOpacity = cs.fillOpacity;
+          if (cs.opacity && cs.opacity !== '1') out.opacity = cs.opacity;
+        }
+      } catch (e) {}
+      if (out.fill === 'currentColor') {
+        const af = mark.getAttribute && mark.getAttribute('fill');
+        if (real(af)) out.fill = af;
+      }
     }
-    // <img>-based or unknown icon: fall back to the link's own text color.
-    try { const c = getComputedStyle(insta).color; if (real(c)) return c; } catch (e) {}
-    return 'currentColor';
+    if (out.fill === 'currentColor') {
+      try { const c = getComputedStyle(insta).color; if (real(c)) out.fill = c; } catch (e) {}
+    }
+    return out;
   }
 
   // Always render Facebook as an inline SVG (an <img> SVG isolates currentColor and would
-  // render a different shade), filled with Instagram's exact color, reusing the cloned
-  // Instagram <svg> when present so any inherited opacity/classes are preserved.
-  function paintFacebook(clone, color) {
+  // render a different shade), filled with Instagram's exact color and opacity, reusing the
+  // cloned Instagram <svg> when present so any inherited opacity/classes are preserved.
+  function paintFacebook(clone, paint) {
     let svg = clone.querySelector('svg');
     if (!svg) {
       const img = clone.querySelector('img');
@@ -1801,7 +1808,9 @@ const FACEBOOK_SOCIAL_PATCH = `
     svg.removeAttribute('fill');
     const p = document.createElementNS(SVG_NS, 'path');
     p.setAttribute('d', FB_PATH);
-    p.setAttribute('fill', color);
+    p.setAttribute('fill', paint.fill);
+    if (paint.fillOpacity) p.setAttribute('fill-opacity', paint.fillOpacity);
+    if (paint.opacity) p.setAttribute('opacity', paint.opacity);
     svg.appendChild(p);
   }
 
@@ -1810,7 +1819,7 @@ const FACEBOOK_SOCIAL_PATCH = `
     if (!insta || !insta.parentElement) return;
     if (insta.parentElement.querySelector('[data-nguyen-facebook-icon="true"]')) return;
 
-    const color = exactColor(insta);
+    const paint = readPaint(insta);
     const fb = insta.cloneNode(true);
     fb.setAttribute('data-nguyen-facebook-icon', 'true');
     fb.removeAttribute('data-framer-name');
@@ -1821,7 +1830,7 @@ const FACEBOOK_SOCIAL_PATCH = `
     fb.setAttribute('target', '_blank');
     fb.setAttribute('rel', 'noopener noreferrer');
     fb.setAttribute('aria-label', 'Nguyen Architecture on Facebook');
-    paintFacebook(fb, color);
+    paintFacebook(fb, paint);
     insta.insertAdjacentElement('afterend', fb);
   }
 
