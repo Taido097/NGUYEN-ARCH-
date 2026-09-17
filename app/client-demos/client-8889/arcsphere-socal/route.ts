@@ -888,6 +888,7 @@ const PROJECT_CARDS_PATCH = `
     document.addEventListener('click', (e) => {
       const start = e.target && e.target.nodeType === Node.TEXT_NODE ? e.target.parentElement : e.target;
       if (start?.closest?.('a[data-framer-name="InstagramLogo"]')) return;
+      if (start?.closest?.('[data-framer-name="Social Media"]')) return;
       if (start?.closest?.('input, textarea, select, button[type="submit"], [role="textbox"], [role="combobox"], [role="option"], form')) return;
       const card = start && start.closest ? start.closest('[data-nguyen-card-url]') : null;
       if (!card) return;
