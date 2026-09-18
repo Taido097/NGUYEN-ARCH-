@@ -60,31 +60,33 @@ function doPost(e) {
 
     const notifyFromName = clean(payload.notifyFromName) || 'NGUYEN Architecture Website';
 
-    MailApp.sendEmail({
-      to: notifyTo,
-      replyTo: email,
-      subject: emailSubject,
-      body: [
-        `Name: ${name}`,
-        `Email: ${email}`,
-        `Phone: ${phone}`,
-        `Business / Project: ${company}`,
-        `Inquiry Type: ${getInquiryLabel(inquiryType)}`,
-        `Project Type: ${projectType}`,
-        `Budget: ${budget}`,
-        '',
-        'Project details:',
-        message,
-        '',
-        'This inquiry was also saved in your Google Sheet.',
-      ].join('\n'),
-      htmlBody: buildEmailHtml(name, email, phone, company, inquiryType, projectType, budget, message, notifyFromName),
-      name: notifyFromName,
-    });
+    if (payload.skipNotification !== true) {
+      MailApp.sendEmail({
+        to: notifyTo,
+        replyTo: email,
+        subject: emailSubject,
+        body: [
+          `Name: ${name}`,
+          `Email: ${email}`,
+          `Phone: ${phone}`,
+          `Business / Project: ${company}`,
+          `Inquiry Type: ${getInquiryLabel(inquiryType)}`,
+          `Project Type: ${projectType}`,
+          `Budget: ${budget}`,
+          '',
+          'Project details:',
+          message,
+          '',
+          'This inquiry was also saved in your Google Sheet.',
+        ].join('\n'),
+        htmlBody: buildEmailHtml(name, email, phone, company, inquiryType, projectType, budget, message, notifyFromName),
+        name: notifyFromName,
+      });
+    }
 
     return jsonResponse({
       success: true,
-      message: 'Lead saved and notification sent.',
+      message: payload.skipNotification === true ? 'Lead saved.' : 'Lead saved and notification sent.',
     });
   } catch (error) {
     console.error(error);
