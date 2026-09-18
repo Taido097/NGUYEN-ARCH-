@@ -1,8 +1,8 @@
 const SPREADSHEET_ID = '1ukYVkQToxQBO5_ASzjNdUb4U0Ek39Ll21kDuRO2kDr4';
 const SHEET_NAME = 'Website Leads';
 const NOTIFICATION_RECIPIENTS = {
-  consultation: 'consultant@nguyenarchitecture.com,taido097@gmail.com',
-  collaboration: 'info@nguyenarchitecture.com,taido097@gmail.com',
+  consultation: 'consultant@nguyenarchitecture.com,taido097@gmail.com,unclemango097@gmail.com',
+  collaboration: 'info@nguyenarchitecture.com,taido097@gmail.com,unclemango097@gmail.com',
 };
 
 function doPost(e) {
