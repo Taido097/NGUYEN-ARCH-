@@ -109,6 +109,7 @@ export async function POST(request: NextRequest) {
     // @nguyenarchitecture.com mailboxes actually receive (an Apps Script/Gmail sender is filtered
     // by that domain, which is why only the gmail recipient was getting the form emails). Falls
     // through to Apps Script below only when no Resend key is set, so there is no regression.
+    let sentViaResend = false;
     if (process.env.RESEND_API_KEY) {
       let payload;
       try {
@@ -133,10 +134,7 @@ export async function POST(request: NextRequest) {
       if (!result.ok) {
         return NextResponse.json({ error: result.error }, { status: 502 });
       }
-      return NextResponse.json(
-        { success: true, message: 'Your request was sent successfully.' },
-        { status: 200 }
-      );
+      sentViaResend = true;
     }
 
     let notifyTo = '';
@@ -172,6 +170,9 @@ export async function POST(request: NextRequest) {
         notifyTo,
         notifyFromName: NOTIFY_FROM_NAME,
         submittedAt: new Date().toISOString(),
+        // Resend delivers the notification from the verified client domain. Apps Script
+        // remains the lead store and must not send a duplicate Gmail notification.
+        skipNotification: sentViaResend,
       }),
     });
 
