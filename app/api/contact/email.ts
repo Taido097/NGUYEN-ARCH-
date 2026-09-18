@@ -1,13 +1,4 @@
-import { buildContactDetails, getContactRecipient, type InquiryType } from './routing';
-
-// Every submission is emailed to all three addresses. Sending from the verified
-// nguyenarchitecture.com domain (via Resend) is what lets the two @nguyenarchitecture.com
-// mailboxes actually receive — an Apps Script / Gmail sender gets filtered by that domain.
-const RECIPIENTS = [
-  'info@nguyenarchitecture.com',
-  'consultant@nguyenarchitecture.com',
-  'taido097@gmail.com',
-];
+import { buildContactDetails, getContactRecipient, getContactSubject, type InquiryType } from './routing';
 
 // From address. Must be on a domain verified in Resend (nguyenarchitecture.com).
 // Overridable via env so the domain/sender can change without a code edit.
@@ -33,7 +24,7 @@ function escapeHtml(value: string) {
     .replace(/'/g, '&#039;');
 }
 
-function buildHtml(fields: ContactFields, detailBody: string) {
+function buildHtml(fields: ContactFields, detailBody: string, subject: string) {
   const name = escapeHtml(fields.name);
   const email = escapeHtml(fields.email);
   const phone = escapeHtml(fields.phone);
@@ -44,7 +35,7 @@ function buildHtml(fields: ContactFields, detailBody: string) {
     <div style="font-family:Arial,sans-serif;line-height:1.6;color:#171717;max-width:640px;margin:0 auto;">
       <div style="background:#111;color:#fff;padding:24px 28px;">
         <p style="margin:0;font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:#bdbdbd;">NGUYEN Architecture &amp; Engineering</p>
-        <h1 style="margin:8px 0 0;font-size:26px;">New architecture project inquiry</h1>
+        <h1 style="margin:8px 0 0;font-size:26px;">${escapeHtml(subject)}</h1>
       </div>
       <div style="border:1px solid #e5e5e5;border-top:0;padding:28px;">
         <p><strong>Name:</strong> ${name}</p>
@@ -61,19 +52,17 @@ function buildHtml(fields: ContactFields, detailBody: string) {
 
 // Build the full Resend request payload from validated fields. Pure — no network — so it can be tested.
 export function buildEmailPayload(fields: ContactFields) {
-  let detailBody = fields.message;
-
-  if (fields.inquiryType) {
-    // Validate the inquiry type (throws for an unknown one — caller maps that to a 400) and
-    // build a richer body. Recipients stay all three regardless of type.
-    getContactRecipient(fields.inquiryType);
-    detailBody = buildContactDetails({
-      inquiryType: fields.inquiryType as InquiryType,
-      projectType: fields.projectType,
-      budget: fields.budget,
-      message: fields.message,
-    });
-  }
+  const recipients = getContactRecipient(fields.inquiryType)
+    .split(',')
+    .map((recipient) => recipient.trim())
+    .filter(Boolean);
+  const subject = getContactSubject(fields.inquiryType, fields.projectType);
+  const detailBody = buildContactDetails({
+    inquiryType: fields.inquiryType as InquiryType,
+    projectType: fields.projectType,
+    budget: fields.budget,
+    message: fields.message,
+  });
 
   const textLines = [
     `Name: ${fields.name}`,
@@ -87,10 +76,10 @@ export function buildEmailPayload(fields: ContactFields) {
 
   return {
     from: FROM,
-    to: RECIPIENTS,
+    to: recipients,
     reply_to: fields.email,
-    subject: `New architecture project inquiry from ${fields.name}`,
-    html: buildHtml(fields, detailBody),
+    subject,
+    html: buildHtml(fields, detailBody, subject),
     text: textLines.join('\n'),
   };
 }
