@@ -1,6 +1,3 @@
-Warning: truncated output (original token count: 31989)
-Total output lines: 2744
-
 import { GET as getConcept } from "../arcsphere-fixed/route"
 import { TESTIMONIAL_PATCH } from "./testimonial-patch"
 
@@ -1300,7 +1297,171 @@ const FOOTER_PATCH = `
     document.querySelectorAll('div,span,p,a,h1,h2,h3,h4,h5,h6,li').forEach((el) => {
       const text = compact(el.textContent);
       if (!isAddrEl(text)) return;
-      if (Array.from(el.children).some((child) => isAddrEl(compac…1989 tokens truncated…ength === 0 || style.display === 'none' || style.visibility === 'hidden') return false;
+      if (Array.from(el.children).some((child) => isAddrEl(compact(child.textContent)))) return;
+      if (normalize(el.textContent) !== NEW_ADDR) el.textContent = NEW_ADDR;
+    });
+
+    document.querySelectorAll('div,span,p,li').forEach((el) => {
+      const key = compact(el.textContent || '');
+      if (key.indexOf('yourarchitecturestudio') === -1 && key.indexOf('nguyenarchitecture&engineering') === -1 && key.indexOf('nguyenarchitectureengineering') === -1) return;
+      if (Array.from(el.children).some((child) => {
+        const childKey = compact(child.textContent || '');
+        return childKey.indexOf('yourarchitecturestudio') !== -1 || childKey.indexOf('nguyenarchitecture&engineering') !== -1;
+      })) return;
+      const current = normalize(el.textContent || '');
+      const next = current
+        .replace(/Your Architecture Studio/gi, 'NGUYEN ARCHITECTURE')
+        .replace(/NGUYEN Architecture\\s*&(?:amp;)?\\s*Engineering/gi, 'NGUYEN ARCHITECTURE');
+      if (current !== next) el.textContent = next;
+    });
+
+    // Preserve Framer's original button and label layout. Only replace the label's text rows.
+    document.querySelectorAll('[data-framer-name="Email"] a[href^="mailto:"]').forEach((anchor) => {
+      anchor.setAttribute('href', 'mailto:' + NEW_EMAIL_SECONDARY + ',' + NEW_EMAIL);
+
+      // Remove layout properties added by earlier versions of this patch.
+      ['display', 'flex-direction', 'gap', 'max-width', 'min-width', 'white-space',
+       'line-height', 'color', 'text-decoration', 'font-size', 'font-weight',
+       'text-transform', 'letter-spacing', 'word-break', 'overflow-wrap'].forEach((property) => {
+        anchor.style.removeProperty(property);
+      });
+
+      let label = anchor.querySelector('[data-framer-name="Label"][data-framer-component-type="RichTextContainer"]') ||
+        anchor.querySelector('[data-framer-component-type="RichTextContainer"]');
+      if (!label) {
+        // Framer hydration flattens this button to a text-only anchor. Recreate only its label wrapper.
+        label = document.createElement('div');
+        label.setAttribute('data-nguyen-footer-email-label', 'true');
+        label.style.setProperty('display', 'flex', 'important');
+        label.style.setProperty('flex-direction', 'column', 'important');
+        label.style.setProperty('align-items', 'flex-start', 'important');
+        label.style.setProperty('width', 'max-content', 'important');
+        label.style.setProperty('max-width', '100%', 'important');
+        anchor.replaceChildren(label);
+      }
+
+      const consultationText = 'Consultations: ' + NEW_EMAIL_SECONDARY;
+      const collaborationText = 'Collaboration: ' + NEW_EMAIL;
+      const consultationRow = label.querySelector('[data-nguyen-footer-email="consultations"]');
+      const collaborationRow = label.querySelector('[data-nguyen-footer-email="collaboration"]');
+      if (consultationRow && collaborationRow &&
+          consultationRow.textContent === consultationText &&
+          collaborationRow.textContent === collaborationText) return;
+
+      const makeRow = (kind, text) => {
+        const row = document.createElement('p');
+        row.className = 'framer-text';
+        row.setAttribute('dir', 'auto');
+        row.setAttribute('data-nguyen-footer-email', kind);
+        row.textContent = text;
+        row.style.setProperty('margin', '0', 'important');
+        row.style.setProperty('font-family', '"Inter Display", "Inter Display Placeholder", sans-serif', 'important');
+        row.style.setProperty('font-size', '12px', 'important');
+        row.style.setProperty('font-weight', '500', 'important');
+        row.style.setProperty('line-height', '150%', 'important');
+        row.style.setProperty('text-transform', 'none', 'important');
+        row.style.setProperty('letter-spacing', 'normal', 'important');
+        row.style.setProperty('white-space', 'normal', 'important');
+        row.style.setProperty('word-break', 'normal', 'important');
+        row.style.setProperty('overflow-wrap', 'break-word', 'important');
+        return row;
+      };
+
+      label.replaceChildren(
+        makeRow('consultations', consultationText),
+        makeRow('collaboration', collaborationText)
+      );
+    });
+  }
+
+  patchFooter();
+  window.addEventListener('load', patchFooter, { once: true });
+  [300, 800, 1800, 3500, 6000, 10000, 20000, 40000].forEach((delay) => setTimeout(patchFooter, delay));
+
+  let footerTimer;
+  const scheduleFooter = () => {
+    clearTimeout(footerTimer);
+    footerTimer = setTimeout(patchFooter, 150);
+  };
+  const observer = new MutationObserver(scheduleFooter);
+  if (document.body) observer.observe(document.body, { childList: true, subtree: true, characterData: true });
+  setTimeout(() => observer.disconnect(), 60000);
+})();
+</script>`
+
+const FOOTER_NAV_PATCH = `
+<style id="nguyen-footer-nav-styles">
+footer [data-nguyen-legacy-nav="true"],
+footer [data-nguyen-legacy-nav="true"] * { visibility: hidden !important; pointer-events: none !important; }
+footer [data-nguyen-removed-footer-link="true"] {
+  display: none !important;
+  visibility: hidden !important;
+  pointer-events: none !important;
+}
+footer > .nguyen-footer-links {
+  position: absolute !important; right: clamp(24px, 11vw, 180px) !important; width: 136px !important;
+  display: flex !important; flex-direction: column !important; gap: 4px !important;
+  margin: 0 !important; padding: 0 !important; z-index: 5;
+}
+footer > .nguyen-footer-links > :is(a, button) {
+  display: flex !important; align-items: center !important; min-height: 44px !important;
+  margin: 0 !important; padding: 0 !important; opacity: 1 !important;
+  visibility: visible !important; transform: none !important; background: transparent !important;
+  color: rgba(79,71,66,.8) !important; font: 500 14px/1.3 "Inter Display", Arial, sans-serif !important;
+  letter-spacing: -.4px !important; text-decoration: none !important; border: 0 !important;
+  border-radius: 0 !important; cursor: pointer !important;
+}
+footer > .nguyen-footer-links > :is(a, button):hover,
+footer > .nguyen-footer-links > :is(a, button):focus-visible { text-decoration: underline !important; text-underline-offset: 5px; color: #4f4742 !important; }
+@media (min-width: 1181px) {
+  footer [data-nguyen-footer-heading="true"] { max-width: calc(100% - 360px) !important; }
+}
+@media (max-width: 1180px) and (min-width: 810px) {
+  footer > .nguyen-footer-links {
+    left: var(--footer-nav-compact-left, 24px) !important;
+    right: auto !important;
+    top: var(--footer-nav-compact-top, auto) !important;
+    width: min(220px, calc(100% - 48px)) !important;
+    gap: 0 !important;
+  }
+}
+@media (max-width: 809px) {
+  footer > .nguyen-footer-links {
+    left: var(--footer-nav-mobile-left, 24px) !important;
+    top: var(--footer-nav-mobile-top, auto) !important;
+    width: min(220px, calc(100% - 48px)) !important;
+    gap: 0 !important;
+  }
+  footer > .nguyen-footer-links {
+    z-index: 9999 !important;
+    pointer-events: auto !important;
+    touch-action: manipulation !important;
+  }
+  footer > .nguyen-footer-links > :is(a, button) {
+    position: relative !important;
+    z-index: 1 !important;
+    min-height: 36px !important;
+    pointer-events: auto !important;
+    touch-action: manipulation !important;
+  }
+}
+</style>
+<script id="nguyen-socal-footer-nav-patch">
+(() => {
+  const home = window.location.origin + '/client-demos/client-8889/arcsphere-socal';
+  const destinations = {
+    home,
+    services: home + '#services',
+    projects: home + '#featured-projects',
+    process: home + '#process',
+    contact: window.location.origin + '/client-demos/client-8889/residential/contact'
+  };
+  function findFooterText(footer, text) {
+    const key = text.replace(/\\s+/g, '').toLowerCase();
+    return Array.from(footer.querySelectorAll('h1,h2,h3,h4,p,span,div')).find((el) => {
+      if ((el.textContent || '').replace(/\\s+/g, '').toLowerCase() !== key) return false;
+      const style = getComputedStyle(el);
+      if (el.getClientRects().length === 0 || style.display === 'none' || style.visibility === 'hidden') return false;
       return !Array.from(el.children).some((child) => (child.textContent || '').replace(/\\s+/g, '').toLowerCase() === key);
     });
   }
