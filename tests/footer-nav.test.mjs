@@ -13,14 +13,18 @@ test('footer has an independent five-link navigation, not animated text matching
 test('replacement is scoped to footer-links with a mobile position reset', () => {
   assert.match(patch, /footer > \.nguyen-footer-links/);
   assert.match(patch, /@media \(max-width: 809px\)/);
-  assert.match(patch, /right: clamp\(24px, 11vw, 180px\)/);
+  assert.match(patch, /left: var\(--footer-nav-compact-left, 24px\)/);
 });
 
 test('footer navigation never uses a fixed horizontal percentage that can overlap the heading', () => {
   assert.doesNotMatch(patch, /left: 71\.5%/);
   assert.match(patch, /@media \(max-width: 1180px\)/);
   assert.match(patch, /--footer-nav-compact-top/);
-  assert.match(patch, /const compactFooter = window\.innerWidth <= 1180/);
+  assert.match(patch, /const compactFooter = true/);
+});
+
+test('footer navigation is placed below the full-width heading on every desktop width', () => {
+  assert.match(patch, /const compactFooter = true/);
 });
 test('footer nav observer is debounced and disconnects so mobile scroll cannot thrash layout', () => {
   // patchFooterNav walks every footer subtree and reads getBoundingClientRect; running it on every
