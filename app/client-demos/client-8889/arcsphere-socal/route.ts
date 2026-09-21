@@ -4,20 +4,6 @@ import { TESTIMONIAL_PATCH } from "./testimonial-patch"
 const OLD_COPY = 'Based in Orange County, we provide commercial architecture, engineering and permit support from existing-condition survey and business layout through plan check and approval.'
 const NEW_COPY = 'Based in Southern California, we provide residential and commercial architecture, engineering, and permit support from concept through approval.'
 
-const DOCUMENT_TITLE = 'NGUYEN Architecture | Architecture & Engineering'
-
-const DOCUMENT_TITLE_LOCK_PATCH = `
-<script id="nguyen-document-title-lock">
-(() => {
-  const apply = () => {
-    if (document.title !== '${DOCUMENT_TITLE}') document.title = '${DOCUMENT_TITLE}';
-  };
-  apply();
-  new MutationObserver(apply).observe(document.head, { childList: true, subtree: true, characterData: true });
-  [0, 50, 250, 1000, 3000, 8000].forEach((delay) => setTimeout(apply, delay));
-})();
-</script>`
-
 // Replace the main Framer hero asset at the HTML/hydration source so desktop, tablet, and mobile all
 // render the same selected project image. The two off-canvas side images use different source hashes
 // and are intentionally left unchanged.
@@ -38,51 +24,6 @@ const HOMEPAGE_MOBILE_HERO_CROP = `
   }
 }
 </style>`
-
-// This listener is deliberately placed at the beginning of <head>, before Framer's
-// hydration scripts. Framer otherwise captures the homepage form's button event first.
-const FRAMER_FORM_INQUIRY_CAPTURE_PATCH = `
-<script id="nguyen-framer-inquiry-capture">
-(() => {
-  const KEY = '__nguyenHomepageInquiryType';
-  function apply(block, value) {
-    if (!block || !value) return;
-    block.dataset.nguyenInquiryType = value;
-    block.querySelectorAll('[data-inquiry-type]').forEach((choice) => {
-      const active = choice.dataset.inquiryType === value;
-      choice.setAttribute('aria-pressed', active ? 'true' : 'false');
-      choice.style.background = active ? '#1f1c19' : '#fff';
-      choice.style.color = active ? '#f0ebe6' : '#4f4742';
-      choice.style.borderColor = active ? '#1f1c19' : '#d8d0c6';
-    });
-  }
-  function choose(event) {
-    const start = event.target && event.target.nodeType === Node.TEXT_NODE ? event.target.parentElement : event.target;
-    const button = start && start.closest && start.closest('.nf-inquiry-choice [data-inquiry-type]');
-    if (!button) return;
-    const value = button.dataset.inquiryType || '';
-    const block = button.closest('.nf-inquiry-choice');
-    window[KEY] = value;
-    apply(block, value);
-    event.preventDefault();
-    event.stopImmediatePropagation();
-  }
-  window.addEventListener('pointerdown', choose, true);
-  window.addEventListener('click', choose, true);
-
-  function submitHomepageForm(event) {
-    const start = event.target && event.target.nodeType === Node.TEXT_NODE ? event.target.parentElement : event.target;
-    const button = start && start.closest && start.closest('button, a, [role="button"], [type="submit"]');
-    if (!button) return;
-    const label = (button.textContent || '').replace(/\\s+/g, '').toLowerCase();
-    if (label !== 'submit' && label !== 'submitsubmit' && label !== 'submitsubmitsubmit') return;
-    if (!window.__nguyenHomepageSubmit || !window.__nguyenHomepageSubmit(button)) return;
-    event.preventDefault();
-    event.stopImmediatePropagation();
-  }
-  window.addEventListener('click', submitHomepageForm, true);
-})();
-</script>`
 
 // Framer can restore the original image URL during hydration even after the server-rendered HTML has
 // been rewritten. Lock only the center hero image by its unique source hash; never change layout or
@@ -887,8 +828,6 @@ const PROJECT_CARDS_PATCH = `
     window.__nguyenCardRouting = true;
     document.addEventListener('click', (e) => {
       const start = e.target && e.target.nodeType === Node.TEXT_NODE ? e.target.parentElement : e.target;
-      if (start?.closest?.('a[data-framer-name="InstagramLogo"]')) return;
-      if (start?.closest?.('[data-framer-name="Social Media"]')) return;
       if (start?.closest?.('input, textarea, select, button[type="submit"], [role="textbox"], [role="combobox"], [role="option"], form')) return;
       const card = start && start.closest ? start.closest('[data-nguyen-card-url]') : null;
       if (!card) return;
@@ -1355,16 +1294,11 @@ const FOOTER_PATCH = `
       }
     }
 
-    // Capture the Address text's rendered color and weight so the Email rows can match it.
-    let addrColor = '', addrWeight = '';
     document.querySelectorAll('div,span,p,a,h1,h2,h3,h4,h5,h6,li').forEach((el) => {
       const text = compact(el.textContent);
-      const isAddr = isAddrEl(text) || normalize(el.textContent) === NEW_ADDR;
-      if (!isAddr) return;
-      if (Array.from(el.children).some((child) => isAddrEl(compact(child.textContent)) || normalize(child.textContent) === NEW_ADDR)) return;
+      if (!isAddrEl(text)) return;
+      if (Array.from(el.children).some((child) => isAddrEl(compact(child.textContent)))) return;
       if (normalize(el.textContent) !== NEW_ADDR) el.textContent = NEW_ADDR;
-      el.setAttribute('data-nguyen-footer-addr', '1');
-      try { const cs = getComputedStyle(el); if (cs) { addrColor = cs.color; addrWeight = cs.fontWeight; } } catch (e) {}
     });
 
     document.querySelectorAll('div,span,p,li').forEach((el) => {
@@ -1410,18 +1344,9 @@ const FOOTER_PATCH = `
       const collaborationText = 'Collaboration: ' + NEW_EMAIL;
       const consultationRow = label.querySelector('[data-nguyen-footer-email="consultations"]');
       const collaborationRow = label.querySelector('[data-nguyen-footer-email="collaboration"]');
-      const applyShade = (row) => {
-        if (!row) return;
-        row.style.setProperty('font-weight', addrWeight || '400', 'important');
-        if (addrColor) row.style.setProperty('color', addrColor, 'important');
-      };
       if (consultationRow && collaborationRow &&
           consultationRow.textContent === consultationText &&
-          collaborationRow.textContent === collaborationText) {
-        applyShade(consultationRow);
-        applyShade(collaborationRow);
-        return;
-      }
+          collaborationRow.textContent === collaborationText) return;
 
       const makeRow = (kind, text) => {
         const row = document.createElement('p');
@@ -1432,8 +1357,7 @@ const FOOTER_PATCH = `
         row.style.setProperty('margin', '0', 'important');
         row.style.setProperty('font-family', '"Inter Display", "Inter Display Placeholder", sans-serif', 'important');
         row.style.setProperty('font-size', '12px', 'important');
-        row.style.setProperty('font-weight', addrWeight || '400', 'important');
-        if (addrColor) row.style.setProperty('color', addrColor, 'important');
+        row.style.setProperty('font-weight', '500', 'important');
         row.style.setProperty('line-height', '150%', 'important');
         row.style.setProperty('text-transform', 'none', 'important');
         row.style.setProperty('letter-spacing', 'normal', 'important');
@@ -1475,7 +1399,7 @@ footer [data-nguyen-removed-footer-link="true"] {
   pointer-events: none !important;
 }
 footer > .nguyen-footer-links {
-  position: absolute !important; left: 71.5% !important; width: 136px !important;
+  position: absolute !important; right: clamp(24px, 11vw, 180px) !important; width: 136px !important;
   display: flex !important; flex-direction: column !important; gap: 4px !important;
   margin: 0 !important; padding: 0 !important; z-index: 5;
 }
@@ -1489,6 +1413,18 @@ footer > .nguyen-footer-links > :is(a, button) {
 }
 footer > .nguyen-footer-links > :is(a, button):hover,
 footer > .nguyen-footer-links > :is(a, button):focus-visible { text-decoration: underline !important; text-underline-offset: 5px; color: #4f4742 !important; }
+@media (min-width: 1181px) {
+  footer [data-nguyen-footer-heading="true"] { max-width: calc(100% - 360px) !important; }
+}
+@media (max-width: 1180px) and (min-width: 810px) {
+  footer > .nguyen-footer-links {
+    left: var(--footer-nav-compact-left, 24px) !important;
+    right: auto !important;
+    top: var(--footer-nav-compact-top, auto) !important;
+    width: min(220px, calc(100% - 48px)) !important;
+    gap: 0 !important;
+  }
+}
 @media (max-width: 809px) {
   footer > .nguyen-footer-links {
     left: var(--footer-nav-mobile-left, 24px) !important;
@@ -1628,6 +1564,8 @@ footer > .nguyen-footer-links > :is(a, button):focus-visible { text-decoration: 
       const bounds = footer.getBoundingClientRect();
       const heading = footer.querySelector('h3, h2');
       const mobile = window.innerWidth <= 809;
+      const compactFooter = window.innerWidth <= 1180;
+      if (heading) heading.setAttribute('data-nguyen-footer-heading', 'true');
       const getInTouch = findFooterText(footer, 'GET IN TOUCH');
       const refEl = mobile ? (getInTouch || heading || original) : (heading || original);
       if (!refEl) return;
@@ -1637,10 +1575,21 @@ footer > .nguyen-footer-links > :is(a, button):focus-visible { text-decoration: 
         const left = leftReference ? Math.max(20, leftReference.getBoundingClientRect().left - bounds.left) : 24;
         nav.style.setProperty('--footer-nav-mobile-top', Math.max(0, reference.bottom - bounds.top + 42) + 'px');
         nav.style.setProperty('--footer-nav-mobile-left', left + 'px');
+        nav.style.removeProperty('--footer-nav-compact-top');
+        nav.style.removeProperty('--footer-nav-compact-left');
+      } else if (compactFooter) {
+        const leftReference = heading || original;
+        const left = leftReference ? Math.max(24, leftReference.getBoundingClientRect().left - bounds.left) : 24;
+        nav.style.setProperty('--footer-nav-compact-top', Math.max(0, reference.bottom - bounds.top + 32) + 'px');
+        nav.style.setProperty('--footer-nav-compact-left', left + 'px');
+        nav.style.removeProperty('--footer-nav-mobile-top');
+        nav.style.removeProperty('--footer-nav-mobile-left');
       } else {
         nav.style.top = Math.max(0, reference.top - bounds.top - 12) + 'px';
         nav.style.removeProperty('--footer-nav-mobile-top');
         nav.style.removeProperty('--footer-nav-mobile-left');
+        nav.style.removeProperty('--footer-nav-compact-top');
+        nav.style.removeProperty('--footer-nav-compact-left');
       }
     });
     // The process cards already exist; mark their containing section for this link.
@@ -1757,186 +1706,9 @@ footer > .nguyen-footer-links > :is(a, button):focus-visible { text-decoration: 
     attributes: true,
     attributeFilter: ['style', 'class', 'aria-hidden', 'inert', 'data-nguyen-legacy-nav'],
   });
+  setTimeout(() => observer.disconnect(), 60000);
 })();
 <\/script>`
-
-const NGUYEN_FACEBOOK_URL = 'https://www.facebook.com/people/Nguyen-Architecture/61579114646057/'
-
-// Add a Facebook icon beside Instagram by cloning the Instagram anchor (so size, color, spacing
-// and hover match exactly), then swapping its glyph to the Facebook mark. The clone is marked
-// data-nguyen-facebook-icon so SOCIAL_MEDIA_INSTAGRAM_ONLY_PATCH keeps it, and it sits inside the
-// Social Media section, so the card router already ignores clicks on it.
-const FACEBOOK_SOCIAL_PATCH = `
-<script id="nguyen-facebook-icon">
-(() => {
-  const FB_URL = '${NGUYEN_FACEBOOK_URL}';
-  const SVG_NS = 'http://www.w3.org/2000/svg';
-  // Solid Facebook mark (filled circle "f"). A solid disc reads heavier than Instagram's
-  // outline glyph, so it is shrunk within its box (FB_PAD) and its fill softened (FB_LIGHTEN)
-  // to bring the two icons to a matching visual weight.
-  const FB_PATH = 'M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z';
-  const FB_PAD = 2.4;      // viewBox padding per side: shrinks the disc to ~83% of Instagram's box
-  const FB_LIGHTEN = 0.88; // multiply the inherited opacity to lighten the solid fill a touch
-
-  function real(v) { return v && v !== 'none' && v !== 'transparent' && v !== 'rgba(0, 0, 0, 0)'; }
-
-  // Read the Instagram icon's exact rendered paint (computed color AND opacity), so a reduced
-  // opacity on the glyph doesn't leave the solid Facebook fill looking darker at full opacity.
-  function readPaint(insta) {
-    const out = { fill: 'currentColor', fillOpacity: '', opacity: '' };
-    const svg = insta.querySelector('svg');
-    const mark = (svg && svg.querySelector('path, polygon, rect, circle, ellipse, line, polyline, use')) || svg;
-    if (mark) {
-      try {
-        const cs = getComputedStyle(mark);
-        if (cs) {
-          if (real(cs.fill)) out.fill = cs.fill;
-          else if (real(cs.stroke)) out.fill = cs.stroke;
-          if (cs.fillOpacity && cs.fillOpacity !== '1') out.fillOpacity = cs.fillOpacity;
-          if (cs.opacity && cs.opacity !== '1') out.opacity = cs.opacity;
-        }
-      } catch (e) {}
-      if (out.fill === 'currentColor') {
-        const af = mark.getAttribute && mark.getAttribute('fill');
-        if (real(af)) out.fill = af;
-      }
-    }
-    if (out.fill === 'currentColor') {
-      try { const c = getComputedStyle(insta).color; if (real(c)) out.fill = c; } catch (e) {}
-    }
-    return out;
-  }
-
-  // Always render Facebook as an inline SVG (an <img> SVG isolates currentColor and would
-  // render a different shade), filled with Instagram's exact color and opacity, reusing the
-  // cloned Instagram <svg> when present so any inherited opacity/classes are preserved.
-  function paintFacebook(clone, paint) {
-    let svg = clone.querySelector('svg');
-    if (!svg) {
-      const img = clone.querySelector('img');
-      const w = (img && (img.getAttribute('width') || img.getAttribute('height'))) || '20';
-      const h = (img && (img.getAttribute('height') || img.getAttribute('width'))) || '20';
-      svg = document.createElementNS(SVG_NS, 'svg');
-      svg.setAttribute('width', w);
-      svg.setAttribute('height', h);
-      if (img && img.parentNode) img.parentNode.replaceChild(svg, img);
-      else clone.appendChild(svg);
-    }
-    while (svg.firstChild) svg.removeChild(svg.firstChild);
-    // Pad the viewBox so the 24-unit disc renders smaller (and centered) inside the icon's box.
-    const box = 24 + FB_PAD * 2;
-    svg.setAttribute('viewBox', -FB_PAD + ' ' + -FB_PAD + ' ' + box + ' ' + box);
-    svg.removeAttribute('fill');
-    const p = document.createElementNS(SVG_NS, 'path');
-    p.setAttribute('d', FB_PATH);
-    p.setAttribute('fill', paint.fill);
-    const baseFO = paint.fillOpacity ? parseFloat(paint.fillOpacity) : 1;
-    p.setAttribute('fill-opacity', String(Math.round(baseFO * FB_LIGHTEN * 1000) / 1000));
-    if (paint.opacity) p.setAttribute('opacity', paint.opacity);
-    svg.appendChild(p);
-  }
-
-  function addFacebook() {
-    const insta = document.querySelector('a[data-framer-name="InstagramLogo"]');
-    if (!insta || !insta.parentElement) return;
-
-    const paint = readPaint(insta);
-    const key = paint.fill + '|' + paint.fillOpacity + '|' + paint.opacity;
-
-    // If the icon already exists, only re-apply the paint when the detected shade changed
-    // (Framer may style the Instagram glyph after our first pass). The key guard stops the
-    // MutationObserver from looping on our own repaint once the shade is stable.
-    const existing = insta.parentElement.querySelector('[data-nguyen-facebook-icon="true"]');
-    if (existing) {
-      if (existing.__nguyenPaintKey !== key) {
-        existing.__nguyenPaintKey = key;
-        paintFacebook(existing, paint);
-      }
-      return;
-    }
-
-    const fb = insta.cloneNode(true);
-    fb.setAttribute('data-nguyen-facebook-icon', 'true');
-    fb.removeAttribute('data-framer-name');
-    fb.removeAttribute('data-nguyen-instagram-icon');
-    fb.removeAttribute('data-nguyen-card-url');
-    fb.removeAttribute('data-nguyen-routed');
-    fb.setAttribute('href', FB_URL);
-    fb.setAttribute('target', '_blank');
-    fb.setAttribute('rel', 'noopener noreferrer');
-    fb.setAttribute('aria-label', 'Nguyen Architecture on Facebook');
-    fb.__nguyenPaintKey = key;
-    paintFacebook(fb, paint);
-    insta.insertAdjacentElement('afterend', fb);
-  }
-
-  // Own the Facebook icon's click outright. The social row is nested inside a routable card and
-  // the footer, so several capture-phase handlers (the base layer's fixNav, the footer router,
-  // the card router / findLink) try to send the click elsewhere. Registered on window in the
-  // capture phase, these run before every document-level handler: they block the hijackers and
-  // navigate to the Facebook page directly, so it does not matter if another script rewrote the
-  // anchor href — the destination is fixed here.
-  if (!window.__nguyenFacebookClickGuard) {
-    window.__nguyenFacebookClickGuard = true;
-    const inFacebook = (t) => !!(t && t.closest && t.closest('[data-nguyen-facebook-icon="true"]'));
-    ['pointerdown', 'mousedown', 'touchstart', 'pointerup', 'mouseup', 'auxclick'].forEach((type) => {
-      window.addEventListener(type, (e) => {
-        if (inFacebook(e.target) && e.stopImmediatePropagation) e.stopImmediatePropagation();
-      }, true);
-    });
-    window.addEventListener('click', (e) => {
-      if (!inFacebook(e.target)) return;
-      e.preventDefault();
-      if (e.stopImmediatePropagation) e.stopImmediatePropagation();
-      // Not window.open(..., 'noopener'): that returns null even on success and would trip the
-      // fallback into a second navigation. Open normally, then sever the opener reference.
-      const win = window.open(FB_URL, '_blank');
-      if (win) { try { win.opener = null; } catch (err) {} }
-      else window.location.href = FB_URL;
-    }, true);
-  }
-
-  addFacebook();
-  window.addEventListener('load', addFacebook, { once: true });
-  [200, 600, 1500, 3000].forEach((t) => setTimeout(addFacebook, t));
-  const observer = new MutationObserver(addFacebook);
-  if (document.body) observer.observe(document.body, { childList: true, subtree: true });
-})();
-</script>`
-
-const NGUYEN_INSTAGRAM_URL = 'https://www.instagram.com/nguyen_architecture/'
-const INSTAGRAM_ICON_HREF_RE = /(<a\b(?=[^>]*data-framer-name="InstagramLogo")[^>]*\bhref=")https:\/\/instagram\.com(")/g
-const NON_INSTAGRAM_SOCIAL_ANCHOR_RE = /<a\b(?=[^>]*data-framer-name="(?:LinkedinLogo|PinterestLogo|Behance)")\b[^>]*>[\s\S]*?<\/a>/g
-
-const INSTAGRAM_SOCIAL_PATCH = `
-<script id="nguyen-instagram-social">
-(() => {
-  const INSTAGRAM_SELECTOR = 'a[data-framer-name="InstagramLogo"]';
-  const INSTAGRAM_URL = '${NGUYEN_INSTAGRAM_URL}';
-
-  function connectInstagram() {
-    document.querySelectorAll(INSTAGRAM_SELECTOR).forEach((link) => {
-      if (link.getAttribute('href') !== INSTAGRAM_URL) link.setAttribute('href', INSTAGRAM_URL);
-      if (link.getAttribute('target') !== '_blank') link.setAttribute('target', '_blank');
-      if (link.getAttribute('rel') !== 'noopener noreferrer') link.setAttribute('rel', 'noopener noreferrer');
-      if (link.getAttribute('aria-label') !== 'Nguyen Architecture on Instagram') link.setAttribute('aria-label', 'Nguyen Architecture on Instagram');
-      if (link.getAttribute('data-nguyen-instagram-icon') !== 'true') link.setAttribute('data-nguyen-instagram-icon', 'true');
-      link.removeAttribute('data-nguyen-card-url');
-      link.removeAttribute('data-nguyen-routed');
-    });
-  }
-
-  connectInstagram();
-  window.addEventListener('load', connectInstagram, { once: true });
-  const observer = new MutationObserver(connectInstagram);
-  if (document.body) observer.observe(document.body, {
-    childList: true,
-    subtree: true,
-    attributes: true,
-    attributeFilter: ['data-nguyen-card-url', 'href', 'data-nguyen-routed'],
-  });
-})();
-</script>`
 
 const ICON_BAR_PATCH = `
 <style id="nguyen-socal-mobile-contact-layout">
@@ -2742,35 +2514,11 @@ const PAGE_VISIBILITY_GUARD_PATCH = `
 })();
 </script>`
 
-
-const SOCIAL_MEDIA_INSTAGRAM_ONLY_PATCH = `
-<script id="nguyen-social-instagram-only">
-(() => {
-  const SOCIAL_MEDIA_SELECTOR = '[data-framer-name="Social Media"]';
-
-  function patchSocialMedia() {
-    const removeSelector = 'a:not([data-framer-name="InstagramLogo"]):not([data-nguyen-facebook-icon="true"])';
-    document.querySelectorAll(SOCIAL_MEDIA_SELECTOR).forEach((social) => {
-      social.querySelectorAll(removeSelector).forEach((icon) => icon.remove());
-    });
-  }
-
-  patchSocialMedia();
-  window.addEventListener('load', patchSocialMedia, { once: true });
-  const observer = new MutationObserver(patchSocialMedia);
-  if (document.body) observer.observe(document.body, { childList: true, subtree: true });
-})();
-</script>`
-
 export async function GET() {
   const response = await getConcept()
   if (!response.ok) return response
 
   let html = await response.text()
-  html = html.replace(INSTAGRAM_ICON_HREF_RE, `$1${NGUYEN_INSTAGRAM_URL}$2`)
-  html = html.replace(NON_INSTAGRAM_SOCIAL_ANCHOR_RE, '')
-  html = html.replace('<head>', `<head>${DOCUMENT_TITLE_LOCK_PATCH}${FRAMER_FORM_INQUIRY_CAPTURE_PATCH}`)
-  html = html.replace(/<title[^>]*>[\s\S]*?<\/title>/i, `<title>${DOCUMENT_TITLE}</title>`)
   html = html.split(OLD_COPY).join(NEW_COPY)
   for (const source of HOMEPAGE_HERO_SOURCES) html = html.split(source).join(HOMEPAGE_HERO_IMAGE)
   for (const [source, target] of HOMEPAGE_SIDE_HERO_SOURCES) html = html.split(source).join(target)
@@ -2778,10 +2526,9 @@ export async function GET() {
   const FRAMER_FORM_INTERCEPT_PATCH = `
 <script id="nguyen-framer-form-intercept">
 (() => {
-  const API = window.location.origin + '/api/contact';
+  const API = '/api/contact';
   const EMAIL_RE = /^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/;
   const PHONE_RE = /^[\\d\\s()+\\-.]{7,}$/;
-  const PROJECT_TYPES = new Set(['Custom Home','Addition / Remodel','ADU & SB9','Multifamily','Commercial','Land Development','Engineering / Approvals','Builders Complete Delivery','Other']);
   // Compact button text that signals a form submit (handles Framer split-text doubling/tripling).
   const SUBMIT_WORDS = ['submit','send','sendmessage','sendinquiry','sendrequest','sendit','contactus','getstarted','getintouch','startaproject','inquirenow','requestaquote','requestconsultation','bookconsultation'];
 
@@ -2821,63 +2568,11 @@ export async function GET() {
     });
   }
 
-  function ensureInquiryButtons(container) {
-    if (!container || container.querySelector('.nf-inquiry-choice')) return;
-    const block = document.createElement('div');
-    block.className = 'nf-inquiry-choice';
-    block.style.cssText = 'display:flex;flex-direction:column;gap:8px;margin:0 0 20px;width:100%;';
-    block.innerHTML = '<span style="font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:.08em;color:#736b62;">Inquiry Type *</span><div role="group" aria-label="Inquiry Type" style="display:grid;grid-template-columns:1fr 1fr;gap:10px;"><button type="button" data-inquiry-type="consultation" aria-pressed="false" style="background:#fff;color:#4f4742;border:1px solid #d8d0c6;border-radius:6px;padding:13px 16px;font:600 13px/1.4 inherit;cursor:pointer;">Project Inquiry</button><button type="button" data-inquiry-type="collaboration" aria-pressed="false" style="background:#fff;color:#4f4742;border:1px solid #d8d0c6;border-radius:6px;padding:13px 16px;font:600 13px/1.4 inherit;cursor:pointer;">Collaboration</button></div>';
-    const selected = window.__nguyenHomepageInquiryType || '';
-    if (selected) {
-      block.dataset.nguyenInquiryType = selected;
-      block.querySelectorAll('[data-inquiry-type]').forEach((choice) => {
-        const active = choice.dataset.inquiryType === selected;
-        choice.setAttribute('aria-pressed', active ? 'true' : 'false');
-        choice.style.background = active ? '#1f1c19' : '#fff';
-        choice.style.color = active ? '#f0ebe6' : '#4f4742';
-        choice.style.borderColor = active ? '#1f1c19' : '#d8d0c6';
-      });
-    }
-    container.insertBefore(block, container.firstChild);
-  }
-
-  function selectInquiry(event) {
-    const start = event.target && event.target.nodeType === Node.TEXT_NODE ? event.target.parentElement : event.target;
-    const button = start && start.closest && start.closest('.nf-inquiry-choice [data-inquiry-type]');
-    if (!button) return;
-    const block = button.closest('.nf-inquiry-choice');
-    if (!block) return;
-    window.__nguyenHomepageInquiryType = button.dataset.inquiryType || '';
-    block.dataset.nguyenInquiryType = button.dataset.inquiryType || '';
-    block.querySelectorAll('[data-inquiry-type]').forEach((choice) => {
-      const active = choice === button;
-      choice.setAttribute('aria-pressed', active ? 'true' : 'false');
-      choice.style.background = active ? '#1f1c19' : '#fff';
-      choice.style.color = active ? '#f0ebe6' : '#4f4742';
-      choice.style.borderColor = active ? '#1f1c19' : '#d8d0c6';
-    });
-    event.preventDefault();
-    event.stopImmediatePropagation();
-  }
-
-  window.addEventListener('pointerdown', selectInquiry, true);
-  window.addEventListener('click', selectInquiry, true);
-
   // Classify by input type, value shape, then label — resilient to Framer's opaque labels.
   function collectFields(container) {
     const els = fieldEls(container);
-    const data = { name: '', email: '', phone: '', company: '', message: '', inquiryType: '', projectType: '', budget: '' };
+    const data = { name: '', email: '', phone: '', company: '', message: '' };
     const used = new Set();
-
-    data.inquiryType = container.querySelector('.nf-inquiry-choice')?.dataset.nguyenInquiryType || container.dataset.nguyenInquiryType || '';
-    els.forEach((el) => {
-      if (el.tagName !== 'SELECT') return;
-      const v = (el.value || '').trim();
-      if (!v) return;
-      const options = Array.from(el.options || []).map((option) => (option.value || '').trim());
-      if (!data.projectType && options.some((option) => PROJECT_TYPES.has(option))) { data.projectType = v; used.add(el); }
-      else if (!data.budget && /budget/.test(getLabel(el))) { data.budget = v; used.add(el); }
-    });
 
     els.forEach((el) => {
       const v = (el.value || '').trim();
@@ -2906,8 +2601,6 @@ export async function GET() {
         if (el.tagName === 'INPUT' && (type === 'text' || type === '') && v.length <= 80) { data.name = v; used.add(el); break; }
       }
     }
-    const description = els.find((el) => el.tagName === 'TEXTAREA' && (el.value || '').trim());
-    if (description) { data.message = (description.value || '').trim(); used.add(description); }
     const extras = [];
     els.forEach((el) => {
       const v = (el.value || '').trim();
@@ -2915,7 +2608,7 @@ export async function GET() {
       const label = getLabel(el);
       extras.push(label ? label + ': ' + v : v);
     });
-    if (extras.length) data.message = [data.message, extras.join('\\n')].filter(Boolean).join('\\n');
+    if (extras.length) data.message = extras.join('\\n');
     return data;
   }
 
@@ -2950,16 +2643,13 @@ export async function GET() {
     if (!banner) {
       banner = document.createElement('div');
       banner.className = 'nf-banner';
-      banner.style.cssText = 'margin-top:18px;padding:16px 20px;border-radius:8px;font-size:15px;font-weight:600;line-height:1.5;border:1px solid transparent;';
+      banner.style.cssText = 'margin-top:16px;padding:14px 18px;border-radius:6px;font-size:14px;font-weight:500;line-height:1.5;';
       container.appendChild(banner);
     }
     banner.style.background = success ? '#d4edda' : '#f8d7da';
     banner.style.color = success ? '#155724' : '#721c24';
-    banner.style.borderColor = success ? '#b7dfc0' : '#f1c2c7';
     banner.textContent = msg;
     banner.hidden = false;
-    // Scroll the confirmation into view so the submitter clearly sees that it was sent.
-    try { banner.scrollIntoView({ behavior: 'smooth', block: 'center' }); } catch (e) {}
   }
 
   function resetContainer(container) {
@@ -2969,19 +2659,8 @@ export async function GET() {
 
   async function doSubmit(container) {
     if (!container || container.__nguyenSubmitting) return;
-    ensureInquiryButtons(container);
     container.__nguyenSubmitting = true;
     const fields = collectFields(container);
-    if (!fields.inquiryType) {
-      showBanner(container, false, 'Please choose Project Inquiry or Collaboration.');
-      container.__nguyenSubmitting = false;
-      return;
-    }
-    if (!fields.projectType) {
-      showBanner(container, false, 'Please select one project type.');
-      container.__nguyenSubmitting = false;
-      return;
-    }
     if (!fields.name || !fields.email || !fields.phone) {
       showBanner(container, false, 'Please fill in your name, email, and phone number.');
       container.__nguyenSubmitting = false;
@@ -2992,7 +2671,7 @@ export async function GET() {
       const res = await fetch(API, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(fields) });
       const json = await res.json().catch(() => ({}));
       if (res.ok && json.success) {
-        showBanner(container, true, '\\u2713 Your message has been sent \\u2014 thank you! We will be in touch within 1\\u20132 business days.');
+        showBanner(container, true, 'Thank you \\u2014 we received your inquiry and will be in touch within 1\\u20132 business days.');
         resetContainer(container);
       } else {
         showBanner(container, false, json.error || 'Something went wrong. Please try again or call us directly.');
@@ -3004,18 +2683,9 @@ export async function GET() {
     }
   }
 
-  // Exposed for the <head> capture listener, which runs before Framer's hydration handlers.
-  window.__nguyenHomepageSubmit = (submitEl) => {
-    const container = containerFrom(submitEl);
-    if (!container) return false;
-    doSubmit(container);
-    return true;
-  };
-
   // Attach a native submit listener to any real <form> (covers <button type="submit">).
   function interceptForm(form) {
     if (form.__nguyenIntercepted) return;
-    ensureInquiryButtons(form);
     form.__nguyenIntercepted = true;
     form.addEventListener('submit', (e) => {
       e.preventDefault();
@@ -3037,17 +2707,15 @@ export async function GET() {
         if (looksLikeSubmit(walk)) { submitEl = walk; break; }
       }
       if (!submitEl) return;
-      if (!window.__nguyenHomepageSubmit(submitEl)) return; // no nearby form fields — let HERO_CTA_PATCH handle it
+      const container = containerFrom(submitEl);
+      if (!container) return; // no nearby form fields — let HERO_CTA_PATCH handle it
       e.preventDefault();
       e.stopImmediatePropagation();
+      doSubmit(container);
     }, true);
   }
 
-  function scan() {
-    document.querySelectorAll('form').forEach(interceptForm);
-    const container = anyFormContainer();
-    if (container) ensureInquiryButtons(container);
-  }
+  function scan() { document.querySelectorAll('form').forEach(interceptForm); }
   scan();
   window.addEventListener('load', scan, { once: true });
   [300, 800, 2000, 4000].forEach((t) => setTimeout(scan, t));
@@ -3064,7 +2732,7 @@ export async function GET() {
   // "NGUYEN", so cover both the raw and post-rebrand forms (harmless if client-rendered).
   html = html.replace(/hello@(?:arcsphere|nguyen)studio\.ae/gi, 'info@nguyenarchitecture.com')
   html = html.replace('</head>', `${FOOTER_FIRST_PAINT_STYLE}</head>`)
-  html = html.replace('</body>', `${SPLIT_TEXT_PATCH}${BRAND_PATCH}${SQUARE_IMAGES_PATCH}${SERVICES_ANCHOR_PATCH}${MAIN_NAV_PATCH}${ENGINEERING_SERVICE_PATCH}${PROJECT_CARDS_PATCH}${DESIGN_PANELS_PATCH}${RESIDENTIAL_ROW_IMAGE_PATCH}${BLUEPRINT_IMAGE_PATCH}${PROCESS_TILE_IMAGE_PATCH}${CARD_ROUTING_PATCH}${EXTRA_CARD_CLEANUP_PATCH}${SERVICE_DROPDOWN_PATCH}${PROJECT_TYPE_SECTION_PATCH}${FOOTER_PATCH}${FOOTER_NAV_PATCH}${FACEBOOK_SOCIAL_PATCH}${INSTAGRAM_SOCIAL_PATCH}${SOCIAL_MEDIA_INSTAGRAM_ONLY_PATCH}${ICON_BAR_PATCH}${TESTIMONIAL_PATCH}${HOMEPAGE_MOBILE_HERO_CROP}${HOMEPAGE_HERO_LOCK_PATCH}${HOMEPAGE_SIDE_HERO_LOCK_PATCH}${FRAMER_FORM_INTERCEPT_PATCH}${HERO_CTA_PATCH}${HOMEPAGE_INTRO_IMAGE_SWAP_PATCH}${PAGE_VISIBILITY_GUARD_PATCH}</body>`)
+  html = html.replace('</body>', `${SPLIT_TEXT_PATCH}${BRAND_PATCH}${SQUARE_IMAGES_PATCH}${SERVICES_ANCHOR_PATCH}${MAIN_NAV_PATCH}${ENGINEERING_SERVICE_PATCH}${PROJECT_CARDS_PATCH}${DESIGN_PANELS_PATCH}${RESIDENTIAL_ROW_IMAGE_PATCH}${BLUEPRINT_IMAGE_PATCH}${PROCESS_TILE_IMAGE_PATCH}${CARD_ROUTING_PATCH}${EXTRA_CARD_CLEANUP_PATCH}${SERVICE_DROPDOWN_PATCH}${PROJECT_TYPE_SECTION_PATCH}${NON_LINKING_PROJECT_PANEL_PATCH}${FOOTER_PATCH}${FOOTER_NAV_PATCH}${ICON_BAR_PATCH}${TESTIMONIAL_PATCH}${HOMEPAGE_MOBILE_HERO_CROP}${HOMEPAGE_HERO_LOCK_PATCH}${HOMEPAGE_SIDE_HERO_LOCK_PATCH}${FRAMER_FORM_INTERCEPT_PATCH}${HERO_CTA_PATCH}${HOMEPAGE_INTRO_IMAGE_SWAP_PATCH}${PAGE_VISIBILITY_GUARD_PATCH}</body>`)
 
   const headers = new Headers(response.headers)
   headers.set('Content-Type', 'text/html; charset=utf-8')
