@@ -1399,10 +1399,8 @@ footer [data-nguyen-removed-footer-link="true"] {
   pointer-events: none !important;
 }
 footer > .nguyen-footer-links {
-  position: absolute !important; left: var(--footer-nav-compact-left, 24px) !important;
-  right: auto !important; top: var(--footer-nav-compact-top, auto) !important;
-  width: min(220px, calc(100% - 48px)) !important;
-  display: flex !important; flex-direction: column !important; gap: 0 !important;
+  position: absolute !important; right: clamp(24px, 11vw, 180px) !important; width: 136px !important;
+  display: flex !important; flex-direction: column !important; gap: 4px !important;
   margin: 0 !important; padding: 0 !important; z-index: 5;
 }
 footer > .nguyen-footer-links > :is(a, button) {
@@ -1415,6 +1413,9 @@ footer > .nguyen-footer-links > :is(a, button) {
 }
 footer > .nguyen-footer-links > :is(a, button):hover,
 footer > .nguyen-footer-links > :is(a, button):focus-visible { text-decoration: underline !important; text-underline-offset: 5px; color: #4f4742 !important; }
+@media (min-width: 1181px) {
+  footer [data-nguyen-footer-heading="true"] { max-width: calc(100% - 360px) !important; }
+}
 @media (max-width: 1180px) and (min-width: 810px) {
   footer > .nguyen-footer-links {
     left: var(--footer-nav-compact-left, 24px) !important;
@@ -1563,7 +1564,8 @@ footer > .nguyen-footer-links > :is(a, button):focus-visible { text-decoration: 
       const bounds = footer.getBoundingClientRect();
       const heading = footer.querySelector('h3, h2');
       const mobile = window.innerWidth <= 809;
-      const compactFooter = true;
+      const compactFooter = window.innerWidth <= 1180;
+      if (heading) heading.setAttribute('data-nguyen-footer-heading', 'true');
       const getInTouch = findFooterText(footer, 'GET IN TOUCH');
       const refEl = mobile ? (getInTouch || heading || original) : (heading || original);
       if (!refEl) return;
@@ -1704,6 +1706,7 @@ footer > .nguyen-footer-links > :is(a, button):focus-visible { text-decoration: 
     attributes: true,
     attributeFilter: ['style', 'class', 'aria-hidden', 'inert', 'data-nguyen-legacy-nav'],
   });
+  setTimeout(() => observer.disconnect(), 60000);
 })();
 <\/script>`
 
