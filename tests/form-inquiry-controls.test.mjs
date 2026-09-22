@@ -35,6 +35,12 @@ test('homepage sends the selected service as one projectType value', () => {
   assert.match(homepageRoute, /data\.inquiryType\s*=\s*container\.querySelector\('\.nf-inquiry-choice'\)/)
 })
 
+test('homepage form controls stay clickable inside the non-linking project panel', () => {
+  assert.match(homepageRoute, /\[data-nguyen-non-linking-project-panel="true"\] \[data-nguyen-inquiry-form="true"\]/)
+  assert.match(homepageRoute, /pointer-events: auto !important/)
+  assert.match(homepageRoute, /target\?\.closest\?\.\('input, textarea, select, button, \[data-nguyen-inquiry-form="true"\]'\)/)
+})
+
 test('API forwards structured selection fields to the client Apps Script', () => {
   assert.match(
     apiRoute,
