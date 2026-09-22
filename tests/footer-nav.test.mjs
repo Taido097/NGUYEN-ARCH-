@@ -19,8 +19,9 @@ test('replacement is scoped to footer-links with a mobile position reset', () =>
 test('footer navigation never uses a fixed horizontal percentage that can overlap the heading', () => {
   assert.doesNotMatch(patch, /left: 71\.5%/);
   assert.match(patch, /@media \(max-width: 1180px\)/);
-  assert.match(patch, /--footer-nav-compact-top/);
+  assert.match(patch, /grid-column: 1 \/ -1 !important/);
   assert.match(patch, /const compactFooter = window\.innerWidth <= 1180/);
+  assert.doesNotMatch(patch, /--footer-nav-compact-top/);
   assert.match(patch, /max-width: calc\(100% - 360px\) !important/);
 });
 
