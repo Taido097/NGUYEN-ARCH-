@@ -1433,18 +1433,22 @@ footer > .nguyen-footer-links > :is(a, button):focus-visible { text-decoration: 
 }
 @media (max-width: 1180px) and (min-width: 810px) {
   footer > .nguyen-footer-links {
-    left: var(--footer-nav-compact-left, 24px) !important;
-    right: auto !important;
-    top: var(--footer-nav-compact-top, auto) !important;
-    width: min(220px, calc(100% - 48px)) !important;
+    position: static !important;
+    /* Force a full-width block regardless of whether GET IN TOUCH's parent is a grid or flex
+       row, so inserting the nav as its next sibling always starts a new line below it instead
+       of landing in an unexpected column/row. */
+    display: flex !important; flex-direction: column !important;
+    grid-column: 1 / -1 !important; flex-basis: 100% !important; width: 100% !important;
+    margin: 32px 0 0 !important;
     gap: 0 !important;
   }
 }
 @media (max-width: 809px) {
   footer > .nguyen-footer-links {
-    left: var(--footer-nav-mobile-left, 24px) !important;
-    top: var(--footer-nav-mobile-top, 96px) !important;
-    width: min(220px, calc(100% - 48px)) !important;
+    position: static !important;
+    display: flex !important; flex-direction: column !important;
+    grid-column: 1 / -1 !important; flex-basis: 100% !important; width: 100% !important;
+    margin: 32px 0 0 !important;
     gap: 0 !important;
   }
   footer > .nguyen-footer-links {
@@ -1589,30 +1593,39 @@ footer > .nguyen-footer-links > :is(a, button):focus-visible { text-decoration: 
       const mobile = window.innerWidth <= 809;
       const compactFooter = window.innerWidth <= 1180;
       if (heading) heading.setAttribute('data-nguyen-footer-heading', 'true');
-      const refEl = mobile ? (getInTouch || heading || original) : (heading || original);
+
+      if (mobile || compactFooter) {
+        // Place the nav directly in the document flow, immediately after whatever landmark we
+        // found (GET IN TOUCH, else the heading, else Framer's own footer-links block), instead
+        // of computing a pixel gap from that landmark's bounding box. A fixed pixel gap can only
+        // ever be tuned for one device at a time — too small overlaps the landmark above, too
+        // large overlaps the footer's own content below, and different phones showed both
+        // failures with the same number. Normal document flow sizes the footer to fit its real
+        // content, so it cannot overlap on either side.
+        const anchor = getInTouch || heading || original;
+        // The CSS above (position/display/width) is scoped to a DIRECT child of <footer>. If the
+        // landmark sits inside a wrapper (e.g. a grid or flex row), inserting nav right next to
+        // it would nest nav there too, silently dropping out of that CSS scope and letting the
+        // wrapper's own layout (grid auto-placement, flex row) squeeze or misplace it. Walk up to
+        // whichever ancestor IS a direct child of footer and insert after that instead, so nav
+        // always stays a direct child of footer — full width, one row below the whole section.
+        let topLevel = anchor;
+        while (topLevel && topLevel.parentElement && topLevel.parentElement !== footer) {
+          topLevel = topLevel.parentElement;
+        }
+        if (topLevel && topLevel.parentElement === footer && topLevel.nextElementSibling !== nav) {
+          topLevel.insertAdjacentElement('afterend', nav);
+        } else if ((!topLevel || topLevel.parentElement !== footer) && nav.parentElement !== footer) {
+          footer.appendChild(nav);
+        }
+        nav.style.removeProperty('top');
+        return;
+      }
+
+      const refEl = heading || original;
       if (!refEl) return;
       const reference = refEl.getBoundingClientRect();
-      if (mobile) {
-        const leftReference = getInTouch || heading || original;
-        const left = leftReference ? Math.max(20, leftReference.getBoundingClientRect().left - bounds.left) : 24;
-        nav.style.setProperty('--footer-nav-mobile-top', Math.max(96, reference.bottom - bounds.top + 110) + 'px');
-        nav.style.setProperty('--footer-nav-mobile-left', left + 'px');
-        nav.style.removeProperty('--footer-nav-compact-top');
-        nav.style.removeProperty('--footer-nav-compact-left');
-      } else if (compactFooter) {
-        const leftReference = heading || original;
-        const left = leftReference ? Math.max(24, leftReference.getBoundingClientRect().left - bounds.left) : 24;
-        nav.style.setProperty('--footer-nav-compact-top', Math.max(0, reference.bottom - bounds.top + 90) + 'px');
-        nav.style.setProperty('--footer-nav-compact-left', left + 'px');
-        nav.style.removeProperty('--footer-nav-mobile-top');
-        nav.style.removeProperty('--footer-nav-mobile-left');
-      } else {
-        nav.style.top = Math.max(0, reference.top - bounds.top - 12) + 'px';
-        nav.style.removeProperty('--footer-nav-mobile-top');
-        nav.style.removeProperty('--footer-nav-mobile-left');
-        nav.style.removeProperty('--footer-nav-compact-top');
-        nav.style.removeProperty('--footer-nav-compact-left');
-      }
+      nav.style.top = Math.max(0, reference.top - bounds.top - 12) + 'px';
     });
     // The process cards already exist; mark their containing section for this link.
     const card = Array.from(document.querySelectorAll('h2,h3,h4')).find((el) =>
