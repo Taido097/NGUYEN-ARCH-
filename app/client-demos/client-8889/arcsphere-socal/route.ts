@@ -3,6 +3,21 @@ import { TESTIMONIAL_PATCH } from "./testimonial-patch"
 
 const OLD_COPY = 'Based in Orange County, we provide commercial architecture, engineering and permit support from existing-condition survey and business layout through plan check and approval.'
 const NEW_COPY = 'Based in Southern California, we provide residential and commercial architecture, engineering, and permit support from concept through approval.'
+const DOCUMENT_TITLE = 'NGUYEN ARCHITECTURE & ENGINEERING'
+
+const DOCUMENT_TITLE_LOCK_PATCH = `
+<script id="nguyen-document-title-lock">
+(() => {
+  const title = '${DOCUMENT_TITLE}';
+  function apply() {
+    if (document.title !== title) document.title = title;
+    const node = document.querySelector('title');
+    if (node && node.textContent !== title) node.textContent = title;
+  }
+  apply();
+  new MutationObserver(apply).observe(document.head, { childList: true, subtree: true, characterData: true });
+})();
+</script>`
 
 // Replace the main Framer hero asset at the HTML/hydration source so desktop, tablet, and mobile all
 // render the same selected project image. The two off-canvas side images use different source hashes
@@ -2524,6 +2539,7 @@ export async function GET() {
   if (!response.ok) return response
 
   let html = await response.text()
+  html = html.replace(/<title[^>]*>[\s\S]*?<\/title>/i, `<title>${DOCUMENT_TITLE}</title>`)
   html = html.split(OLD_COPY).join(NEW_COPY)
   for (const source of HOMEPAGE_HERO_SOURCES) html = html.split(source).join(HOMEPAGE_HERO_IMAGE)
   for (const [source, target] of HOMEPAGE_SIDE_HERO_SOURCES) html = html.split(source).join(target)
@@ -2736,7 +2752,7 @@ export async function GET() {
   // The base layer's /ArcSphere/gi branding swap rewrites server-rendered "arcsphere" to
   // "NGUYEN", so cover both the raw and post-rebrand forms (harmless if client-rendered).
   html = html.replace(/hello@(?:arcsphere|nguyen)studio\.ae/gi, 'info@nguyenarchitecture.com')
-  html = html.replace('</head>', `${FOOTER_FIRST_PAINT_STYLE}</head>`)
+  html = html.replace('</head>', `${DOCUMENT_TITLE_LOCK_PATCH}${FOOTER_FIRST_PAINT_STYLE}</head>`)
   html = html.replace('</body>', `${SPLIT_TEXT_PATCH}${BRAND_PATCH}${SQUARE_IMAGES_PATCH}${SERVICES_ANCHOR_PATCH}${MAIN_NAV_PATCH}${ENGINEERING_SERVICE_PATCH}${PROJECT_CARDS_PATCH}${DESIGN_PANELS_PATCH}${RESIDENTIAL_ROW_IMAGE_PATCH}${BLUEPRINT_IMAGE_PATCH}${PROCESS_TILE_IMAGE_PATCH}${CARD_ROUTING_PATCH}${EXTRA_CARD_CLEANUP_PATCH}${SERVICE_DROPDOWN_PATCH}${PROJECT_TYPE_SECTION_PATCH}${NON_LINKING_PROJECT_PANEL_PATCH}${FOOTER_PATCH}${FOOTER_NAV_PATCH}${ICON_BAR_PATCH}${TESTIMONIAL_PATCH}${HOMEPAGE_MOBILE_HERO_CROP}${HOMEPAGE_HERO_LOCK_PATCH}${HOMEPAGE_SIDE_HERO_LOCK_PATCH}${FRAMER_FORM_INTERCEPT_PATCH}${HERO_CTA_PATCH}${HOMEPAGE_INTRO_IMAGE_SWAP_PATCH}${PAGE_VISIBILITY_GUARD_PATCH}</body>`)
 
   const headers = new Headers(response.headers)
