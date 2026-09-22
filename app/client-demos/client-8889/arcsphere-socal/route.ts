@@ -1432,34 +1432,53 @@ footer > .nguyen-footer-links > :is(a, button):focus-visible { text-decoration: 
   footer [data-nguyen-footer-heading="true"] { max-width: calc(100% - 360px) !important; }
 }
 @media (max-width: 1180px) and (min-width: 810px) {
-  footer > .nguyen-footer-links {
+  footer .nguyen-footer-links.nguyen-footer-links--compact-flow {
     position: static !important;
-    /* Force a full-width block regardless of whether GET IN TOUCH's parent is a grid or flex
-       row, so inserting the nav as its next sibling always starts a new line below it instead
-       of landing in an unexpected column/row. */
+    right: auto !important; left: auto !important; top: auto !important;
     display: flex !important; flex-direction: column !important;
-    grid-column: 1 / -1 !important; flex-basis: 100% !important; width: 100% !important;
-    margin: 32px 0 0 !important;
+    width: min(220px, calc(100% - 48px)) !important;
+    margin: 24px 0 0 !important;
+    padding: 0 !important;
     gap: 0 !important;
+    z-index: 5 !important;
+  }
+  footer .nguyen-footer-links.nguyen-footer-links--compact-flow > :is(a, button) {
+    display: flex !important; align-items: center !important;
+    position: relative !important; z-index: 1 !important;
+    min-height: 36px !important;
+    margin: 0 !important; padding: 0 !important;
+    color: rgba(79,71,66,.8) !important;
+    font: 500 14px/1.3 "Inter Display", Arial, sans-serif !important;
+    letter-spacing: -.4px !important; text-decoration: none !important;
+    border: 0 !important; border-radius: 0 !important;
+    cursor: pointer !important; visibility: visible !important;
+    transform: none !important; background: transparent !important;
+    pointer-events: auto !important; touch-action: manipulation !important;
   }
 }
 @media (max-width: 809px) {
-  footer > .nguyen-footer-links {
+  footer .nguyen-footer-links.nguyen-footer-links--mobile-flow {
     position: static !important;
+    right: auto !important; left: auto !important; top: auto !important;
     display: flex !important; flex-direction: column !important;
-    grid-column: 1 / -1 !important; flex-basis: 100% !important; width: 100% !important;
-    margin: 32px 0 0 !important;
+    width: min(220px, calc(100% - 48px)) !important;
+    margin: 24px 0 0 !important;
+    padding: 0 !important;
     gap: 0 !important;
+    z-index: 5 !important;
   }
-  footer > .nguyen-footer-links {
-    z-index: 9999 !important;
-    pointer-events: auto !important;
-    touch-action: manipulation !important;
-  }
-  footer > .nguyen-footer-links > :is(a, button) {
+  footer .nguyen-footer-links.nguyen-footer-links--mobile-flow > :is(a, button) {
+    display: flex !important; align-items: center !important;
     position: relative !important;
     z-index: 1 !important;
     min-height: 36px !important;
+    margin: 0 !important; padding: 0 !important;
+    color: rgba(79,71,66,.8) !important;
+    font: 500 14px/1.3 "Inter Display", Arial, sans-serif !important;
+    letter-spacing: -.4px !important; text-decoration: none !important;
+    border: 0 !important; border-radius: 0 !important;
+    cursor: pointer !important; visibility: visible !important;
+    transform: none !important; background: transparent !important;
     pointer-events: auto !important;
     touch-action: manipulation !important;
   }
@@ -1570,7 +1589,7 @@ footer > .nguyen-footer-links > :is(a, button):focus-visible { text-decoration: 
       const original = footer.querySelector('[data-framer-name="footer-links"]');
       // Keep this broad wrapper active because it also owns the social and legal columns.
       if (getComputedStyle(footer).position === 'static') footer.style.position = 'relative';
-      let nav = footer.querySelector(':scope > .nguyen-footer-links');
+      let nav = footer.querySelector('.nguyen-footer-links');
       if (!nav) {
         nav = document.createElement('nav');
         nav.className = 'nguyen-footer-links';
@@ -1585,7 +1604,6 @@ footer > .nguyen-footer-links > :is(a, button):focus-visible { text-decoration: 
         });
         footer.appendChild(nav);
       }
-      const bounds = footer.getBoundingClientRect();
       const getInTouch = findFooterText(footer, 'GET IN TOUCH');
       // Exclude "GET IN TOUCH" itself from the heading lookup — it can be marked up as an
       // h2/h3, which made it match here and collapse the nav's position onto its own text.
@@ -1594,33 +1612,47 @@ footer > .nguyen-footer-links > :is(a, button):focus-visible { text-decoration: 
       const compactFooter = window.innerWidth <= 1180;
       if (heading) heading.setAttribute('data-nguyen-footer-heading', 'true');
 
-      if (mobile || compactFooter) {
-        // Place the nav directly in the document flow, immediately after whatever landmark we
-        // found (GET IN TOUCH, else the heading, else Framer's own footer-links block), instead
-        // of computing a pixel gap from that landmark's bounding box. A fixed pixel gap can only
-        // ever be tuned for one device at a time — too small overlaps the landmark above, too
-        // large overlaps the footer's own content below, and different phones showed both
-        // failures with the same number. Normal document flow sizes the footer to fit its real
-        // content, so it cannot overlap on either side.
+      if (mobile && getInTouch?.parentElement) {
+        // The active label and navigation share one mobile flow container. This guarantees the
+        // navigation starts after the label, rather than trying to predict Framer's final height.
+        const host = getInTouch.parentElement;
+        nav.classList.remove('nguyen-footer-links--compact-flow');
+        nav.classList.add('nguyen-footer-links--mobile-flow');
+        if (nav.parentElement !== host || nav.previousElementSibling !== getInTouch) {
+          host.insertBefore(nav, getInTouch.nextSibling);
+        }
+        nav.style.removeProperty('top');
+        return;
+      }
+
+      nav.classList.remove('nguyen-footer-links--mobile-flow');
+      if (compactFooter && getInTouch?.parentElement) {
+        const compactHost = getInTouch.parentElement;
+        nav.classList.add('nguyen-footer-links--compact-flow');
+        if (nav.parentElement !== compactHost || nav.previousElementSibling !== getInTouch) {
+          compactHost.insertBefore(nav, getInTouch.nextSibling);
+        }
+        nav.style.removeProperty('top');
+        return;
+      }
+
+      nav.classList.remove('nguyen-footer-links--compact-flow');
+      if (nav.parentElement !== footer) footer.appendChild(nav);
+      if (compactFooter) {
+        // Tablet navigation keeps the existing direct-child flow layout.
         const anchor = getInTouch || heading || original;
-        // The CSS above (position/display/width) is scoped to a DIRECT child of <footer>. If the
-        // landmark sits inside a wrapper (e.g. a grid or flex row), inserting nav right next to
-        // it would nest nav there too, silently dropping out of that CSS scope and letting the
-        // wrapper's own layout (grid auto-placement, flex row) squeeze or misplace it. Walk up to
-        // whichever ancestor IS a direct child of footer and insert after that instead, so nav
-        // always stays a direct child of footer — full width, one row below the whole section.
         let topLevel = anchor;
         while (topLevel && topLevel.parentElement && topLevel.parentElement !== footer) {
           topLevel = topLevel.parentElement;
         }
         if (topLevel && topLevel.parentElement === footer && topLevel.nextElementSibling !== nav) {
           topLevel.insertAdjacentElement('afterend', nav);
-        } else if ((!topLevel || topLevel.parentElement !== footer) && nav.parentElement !== footer) {
-          footer.appendChild(nav);
         }
         nav.style.removeProperty('top');
         return;
       }
+
+      const bounds = footer.getBoundingClientRect();
 
       const refEl = heading || original;
       if (!refEl) return;
