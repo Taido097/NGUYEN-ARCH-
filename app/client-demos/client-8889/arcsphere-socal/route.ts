@@ -1432,15 +1432,28 @@ footer > .nguyen-footer-links > :is(a, button):focus-visible { text-decoration: 
   footer [data-nguyen-footer-heading="true"] { max-width: calc(100% - 360px) !important; }
 }
 @media (max-width: 1180px) and (min-width: 810px) {
-  footer > .nguyen-footer-links {
+  footer .nguyen-footer-links.nguyen-footer-links--compact-flow {
     position: static !important;
-    /* Force a full-width block regardless of whether GET IN TOUCH's parent is a grid or flex
-       row, so inserting the nav as its next sibling always starts a new line below it instead
-       of landing in an unexpected column/row. */
+    right: auto !important; left: auto !important; top: auto !important;
     display: flex !important; flex-direction: column !important;
-    grid-column: 1 / -1 !important; flex-basis: 100% !important; width: 100% !important;
-    margin: 32px 0 0 !important;
+    width: min(220px, calc(100% - 48px)) !important;
+    margin: 24px 0 0 !important;
+    padding: 0 !important;
     gap: 0 !important;
+    z-index: 5 !important;
+  }
+  footer .nguyen-footer-links.nguyen-footer-links--compact-flow > :is(a, button) {
+    display: flex !important; align-items: center !important;
+    position: relative !important; z-index: 1 !important;
+    min-height: 36px !important;
+    margin: 0 !important; padding: 0 !important;
+    color: rgba(79,71,66,.8) !important;
+    font: 500 14px/1.3 "Inter Display", Arial, sans-serif !important;
+    letter-spacing: -.4px !important; text-decoration: none !important;
+    border: 0 !important; border-radius: 0 !important;
+    cursor: pointer !important; visibility: visible !important;
+    transform: none !important; background: transparent !important;
+    pointer-events: auto !important; touch-action: manipulation !important;
   }
 }
 @media (max-width: 809px) {
@@ -1603,6 +1616,7 @@ footer > .nguyen-footer-links > :is(a, button):focus-visible { text-decoration: 
         // The active label and navigation share one mobile flow container. This guarantees the
         // navigation starts after the label, rather than trying to predict Framer's final height.
         const host = getInTouch.parentElement;
+        nav.classList.remove('nguyen-footer-links--compact-flow');
         nav.classList.add('nguyen-footer-links--mobile-flow');
         if (nav.parentElement !== host || nav.previousElementSibling !== getInTouch) {
           host.insertBefore(nav, getInTouch.nextSibling);
@@ -1612,6 +1626,17 @@ footer > .nguyen-footer-links > :is(a, button):focus-visible { text-decoration: 
       }
 
       nav.classList.remove('nguyen-footer-links--mobile-flow');
+      if (compactFooter && getInTouch?.parentElement) {
+        const compactHost = getInTouch.parentElement;
+        nav.classList.add('nguyen-footer-links--compact-flow');
+        if (nav.parentElement !== compactHost || nav.previousElementSibling !== getInTouch) {
+          compactHost.insertBefore(nav, getInTouch.nextSibling);
+        }
+        nav.style.removeProperty('top');
+        return;
+      }
+
+      nav.classList.remove('nguyen-footer-links--compact-flow');
       if (nav.parentElement !== footer) footer.appendChild(nav);
       if (compactFooter) {
         // Tablet navigation keeps the existing direct-child flow layout.
