@@ -1460,8 +1460,11 @@ footer > .nguyen-footer-links > :is(a, button):focus-visible { text-decoration: 
     const key = text.replace(/\\s+/g, '').toLowerCase();
     return Array.from(footer.querySelectorAll('h1,h2,h3,h4,p,span,div')).find((el) => {
       if ((el.textContent || '').replace(/\\s+/g, '').toLowerCase() !== key) return false;
-      const style = getComputedStyle(el);
-      if (el.getClientRects().length === 0 || style.display === 'none' || style.visibility === 'hidden') return false;
+      for (let current = el; current && current !== footer; current = current.parentElement) {
+        const style = getComputedStyle(current);
+        if (current.getClientRects().length === 0 || style.display === 'none' ||
+            style.visibility === 'hidden' || style.opacity === '0') return false;
+      }
       return !Array.from(el.children).some((child) => (child.textContent || '').replace(/\\s+/g, '').toLowerCase() === key);
     });
   }
