@@ -1595,14 +1595,14 @@ footer > .nguyen-footer-links > :is(a, button):focus-visible { text-decoration: 
       if (mobile) {
         const leftReference = getInTouch || heading || original;
         const left = leftReference ? Math.max(20, leftReference.getBoundingClientRect().left - bounds.left) : 24;
-        nav.style.setProperty('--footer-nav-mobile-top', Math.max(96, reference.bottom - bounds.top + 42) + 'px');
+        nav.style.setProperty('--footer-nav-mobile-top', Math.max(96, reference.bottom - bounds.top + 110) + 'px');
         nav.style.setProperty('--footer-nav-mobile-left', left + 'px');
         nav.style.removeProperty('--footer-nav-compact-top');
         nav.style.removeProperty('--footer-nav-compact-left');
       } else if (compactFooter) {
         const leftReference = heading || original;
         const left = leftReference ? Math.max(24, leftReference.getBoundingClientRect().left - bounds.left) : 24;
-        nav.style.setProperty('--footer-nav-compact-top', Math.max(0, reference.bottom - bounds.top + 32) + 'px');
+        nav.style.setProperty('--footer-nav-compact-top', Math.max(0, reference.bottom - bounds.top + 90) + 'px');
         nav.style.setProperty('--footer-nav-compact-left', left + 'px');
         nav.style.removeProperty('--footer-nav-mobile-top');
         nav.style.removeProperty('--footer-nav-mobile-left');
