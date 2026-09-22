@@ -1460,6 +1460,8 @@ footer > .nguyen-footer-links > :is(a, button):focus-visible { text-decoration: 
     const key = text.replace(/\\s+/g, '').toLowerCase();
     return Array.from(footer.querySelectorAll('h1,h2,h3,h4,p,span,div')).find((el) => {
       if ((el.textContent || '').replace(/\\s+/g, '').toLowerCase() !== key) return false;
+      const style = getComputedStyle(el);
+      if (el.getClientRects().length === 0 || style.display === 'none' || style.visibility === 'hidden') return false;
       return !Array.from(el.children).some((child) => (child.textContent || '').replace(/\\s+/g, '').toLowerCase() === key);
     });
   }
@@ -1571,7 +1573,7 @@ footer > .nguyen-footer-links > :is(a, button):focus-visible { text-decoration: 
       if (!refEl) return;
       const reference = refEl.getBoundingClientRect();
       if (mobile) {
-        const leftReference = heading || getInTouch || original;
+        const leftReference = getInTouch || heading || original;
         const left = leftReference ? Math.max(20, leftReference.getBoundingClientRect().left - bounds.left) : 24;
         nav.style.setProperty('--footer-nav-mobile-top', Math.max(0, reference.bottom - bounds.top + 42) + 'px');
         nav.style.setProperty('--footer-nav-mobile-left', left + 'px');
