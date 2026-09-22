@@ -1582,11 +1582,13 @@ footer > .nguyen-footer-links > :is(a, button):focus-visible { text-decoration: 
         footer.appendChild(nav);
       }
       const bounds = footer.getBoundingClientRect();
-      const heading = footer.querySelector('h3, h2');
+      const getInTouch = findFooterText(footer, 'GET IN TOUCH');
+      // Exclude "GET IN TOUCH" itself from the heading lookup — it can be marked up as an
+      // h2/h3, which made it match here and collapse the nav's position onto its own text.
+      const heading = Array.from(footer.querySelectorAll('h3, h2')).find((el) => el !== getInTouch);
       const mobile = window.innerWidth <= 809;
       const compactFooter = window.innerWidth <= 1180;
       if (heading) heading.setAttribute('data-nguyen-footer-heading', 'true');
-      const getInTouch = findFooterText(footer, 'GET IN TOUCH');
       const refEl = mobile ? (getInTouch || heading || original) : (heading || original);
       if (!refEl) return;
       const reference = refEl.getBoundingClientRect();
