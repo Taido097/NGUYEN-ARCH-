@@ -1433,17 +1433,16 @@ footer > .nguyen-footer-links > :is(a, button):focus-visible { text-decoration: 
 }
 @media (max-width: 1180px) and (min-width: 810px) {
   footer > .nguyen-footer-links {
-    left: var(--footer-nav-compact-left, 24px) !important;
-    right: auto !important;
-    top: var(--footer-nav-compact-top, auto) !important;
+    position: static !important;
+    margin-top: 32px !important;
     width: min(220px, calc(100% - 48px)) !important;
     gap: 0 !important;
   }
 }
 @media (max-width: 809px) {
   footer > .nguyen-footer-links {
-    left: var(--footer-nav-mobile-left, 24px) !important;
-    top: var(--footer-nav-mobile-top, 96px) !important;
+    position: static !important;
+    margin-top: 32px !important;
     width: min(220px, calc(100% - 48px)) !important;
     gap: 0 !important;
   }
@@ -1589,30 +1588,30 @@ footer > .nguyen-footer-links > :is(a, button):focus-visible { text-decoration: 
       const mobile = window.innerWidth <= 809;
       const compactFooter = window.innerWidth <= 1180;
       if (heading) heading.setAttribute('data-nguyen-footer-heading', 'true');
-      const refEl = mobile ? (getInTouch || heading || original) : (heading || original);
+
+      if (mobile || compactFooter) {
+        // Place the nav directly in the document flow, immediately after whatever landmark we
+        // found (GET IN TOUCH, else the heading, else Framer's own footer-links block), instead
+        // of computing a pixel offset from that landmark's bounding box. A computed absolute
+        // offset overlaps content whenever the landmark turns out to be a different element than
+        // assumed (as happened here); normal document flow cannot overlap what comes before it.
+        const anchor = getInTouch || heading || original;
+        if (anchor && anchor.parentElement && anchor.nextElementSibling !== nav) {
+          anchor.insertAdjacentElement('afterend', nav);
+        } else if (!anchor && nav.parentElement !== footer) {
+          footer.appendChild(nav);
+        }
+        return;
+      }
+
+      const refEl = heading || original;
       if (!refEl) return;
       const reference = refEl.getBoundingClientRect();
-      if (mobile) {
-        const leftReference = getInTouch || heading || original;
-        const left = leftReference ? Math.max(20, leftReference.getBoundingClientRect().left - bounds.left) : 24;
-        nav.style.setProperty('--footer-nav-mobile-top', Math.max(96, reference.bottom - bounds.top + 42) + 'px');
-        nav.style.setProperty('--footer-nav-mobile-left', left + 'px');
-        nav.style.removeProperty('--footer-nav-compact-top');
-        nav.style.removeProperty('--footer-nav-compact-left');
-      } else if (compactFooter) {
-        const leftReference = heading || original;
-        const left = leftReference ? Math.max(24, leftReference.getBoundingClientRect().left - bounds.left) : 24;
-        nav.style.setProperty('--footer-nav-compact-top', Math.max(0, reference.bottom - bounds.top + 32) + 'px');
-        nav.style.setProperty('--footer-nav-compact-left', left + 'px');
-        nav.style.removeProperty('--footer-nav-mobile-top');
-        nav.style.removeProperty('--footer-nav-mobile-left');
-      } else {
-        nav.style.top = Math.max(0, reference.top - bounds.top - 12) + 'px';
-        nav.style.removeProperty('--footer-nav-mobile-top');
-        nav.style.removeProperty('--footer-nav-mobile-left');
-        nav.style.removeProperty('--footer-nav-compact-top');
-        nav.style.removeProperty('--footer-nav-compact-left');
-      }
+      nav.style.top = Math.max(0, reference.top - bounds.top - 12) + 'px';
+      nav.style.removeProperty('--footer-nav-mobile-top');
+      nav.style.removeProperty('--footer-nav-mobile-left');
+      nav.style.removeProperty('--footer-nav-compact-top');
+      nav.style.removeProperty('--footer-nav-compact-left');
     });
     // The process cards already exist; mark their containing section for this link.
     const card = Array.from(document.querySelectorAll('h2,h3,h4')).find((el) =>
