@@ -64,6 +64,11 @@ test('mobile footer navigation selects only a visible get-in-touch label', () =>
   assert.match(patch, /getClientRects\(\)\.length === 0/);
   assert.match(patch, /for \(let current = el; current && current !== footer; current = current\.parentElement\)/);
 });
+test('tablet footer navigation follows get-in-touch rather than the contact row', () => {
+  assert.match(patch, /nguyen-footer-links--compact-flow/);
+  assert.match(patch, /compactHost\.insertBefore\(nav, getInTouch\.nextSibling\)/);
+  assert.match(patch, /@media \(max-width: 1180px\) and \(min-width: 810px\)/);
+});
 test('header navigation styling never targets footer links after scrolling', () => {
   const main = source.split('const MAIN_NAV_PATCH')[1].split('const ENGINEERING_SERVICE_PATCH')[0];
   assert.match(main, /anchor\.closest\('footer'\)/);
