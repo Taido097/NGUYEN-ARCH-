@@ -61,10 +61,10 @@ test('mobile footer navigation is placed below the get-in-touch text, not on top
 });
 test('mobile placement ignores hidden breakpoint copies of GET IN TOUCH', () => {
   assert.match(patch, /getClientRects\(\)\.length === 0/);
-  assert.match(patch, /getComputedStyle\(el\)/);
+  assert.match(patch, /getComputedStyle(current)/);
   assert.match(patch, /const leftReference = getInTouch \|\| heading \|\| original;/);
 });
-test('header navigation styling never targets footer links after scrolling', () => {
+test('mobile placement ignores a GET IN TOUCH copy hidden by an ancestor', () => {\n  assert.match(patch, /for \\(let current = el; current && current !== footer; current = current\\.parentElement\\)/);\n  assert.match(patch, /style\\.opacity === '0'/);\n});\ntest('header navigation styling never targets footer links after scrolling', () => {
   const main = source.split('const MAIN_NAV_PATCH')[1].split('const ENGINEERING_SERVICE_PATCH')[0];
   assert.match(main, /anchor\.closest\('footer'\)/);
 });
