@@ -2591,10 +2591,40 @@ export async function GET() {
   for (const source of HOMEPAGE_HERO_SOURCES) html = html.split(source).join(HOMEPAGE_HERO_IMAGE)
   for (const [source, target] of HOMEPAGE_SIDE_HERO_SOURCES) html = html.split(source).join(target)
   for (const source of ENGINEERING_TITLE_SOURCES) html = html.split(source).join(ENGINEERING_TITLE)
+  // This listener is injected in <head>, before Framer hydrates the page. Framer can
+  // otherwise consume a choice click and immediately restore its own button state.
+const FRAMER_FORM_INQUIRY_CAPTURE_PATCH = `
+<style id="nguyen-framer-form-inquiry-style">
+.nf-inquiry-controls { margin: 0 0 20px !important; }
+.nf-inquiry-label { margin: 0 0 9px !important; font: inherit !important; font-size: 12px !important; letter-spacing: .08em !important; text-transform: uppercase !important; }
+.nf-inquiry-row { display: flex !important; gap: 10px !important; flex-wrap: wrap !important; }
+.nf-inquiry-choice { appearance: none !important; cursor: pointer !important; min-height: 42px !important; padding: 10px 14px !important; border: 1px solid currentColor !important; border-radius: 0 !important; background: transparent !important; color: inherit !important; font: inherit !important; font-size: 12px !important; letter-spacing: .06em !important; text-transform: uppercase !important; }
+.nf-inquiry-choice.is-selected { background: #524b45 !important; color: #fff !important; border-color: #524b45 !important; }
+</style>
+<script id="nguyen-framer-form-inquiry-capture">
+(() => {
+  function selectInquiry(event) {
+    const target = event.target?.nodeType === Node.TEXT_NODE ? event.target.parentElement : event.target;
+    const choice = target?.closest?.('[data-inquiry-type]');
+    if (!choice) return;
+    const container = choice.closest?.('[data-nguyen-inquiry-form="true"]');
+    const value = choice.getAttribute('data-inquiry-type');
+    if (!container || !value) return;
+    container.dataset.nguyenInquiryType = value;
+    container.querySelectorAll('.nf-inquiry-choice').forEach((button) => {
+      const selected = button === choice;
+      button.classList.toggle('is-selected', selected);
+      button.setAttribute('aria-pressed', selected ? 'true' : 'false');
+    });
+  }
+  window.addEventListener('pointerdown', selectInquiry, true);
+})();
+</script>`;
+
   const FRAMER_FORM_INTERCEPT_PATCH = `
 <script id="nguyen-framer-form-intercept">
 (() => {
-  const API = '/api/contact';
+  const API = window.location.origin + '/api/contact';
   const EMAIL_RE = /^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/;
   const PHONE_RE = /^[\\d\\s()+\\-.]{7,}$/;
   // Compact button text that signals a form submit (handles Framer split-text doubling/tripling).
@@ -2637,9 +2667,34 @@ export async function GET() {
   }
 
   // Classify by input type, value shape, then label — resilient to Framer's opaque labels.
+  function ensureInquiryChoices(container) {
+    if (!container || container.querySelector('.nf-inquiry-controls')) return;
+    container.setAttribute('data-nguyen-inquiry-form', 'true');
+    const controls = document.createElement('div');
+    controls.className = 'nf-inquiry-controls';
+    controls.setAttribute('role', 'group');
+    controls.setAttribute('aria-label', 'Inquiry type');
+    controls.innerHTML = '<p class="nf-inquiry-label">I am contacting you about</p><div class="nf-inquiry-row"><button class="nf-inquiry-choice" type="button" data-inquiry-type="consultation" aria-pressed="false">Project Inquiry</button><button class="nf-inquiry-choice" type="button" data-inquiry-type="collaboration" aria-pressed="false">Collaboration</button></div>';
+    const firstField = fieldEls(container)[0];
+    if (firstField?.parentElement) firstField.parentElement.before(controls);
+    else container.prepend(controls);
+    controls.querySelectorAll('.nf-inquiry-choice').forEach((choice) => {
+      choice.addEventListener('click', () => {
+        const value = choice.getAttribute('data-inquiry-type');
+        if (!value) return;
+        container.dataset.nguyenInquiryType = value;
+        controls.querySelectorAll('.nf-inquiry-choice').forEach((button) => {
+          const selected = button === choice;
+          button.classList.toggle('is-selected', selected);
+          button.setAttribute('aria-pressed', selected ? 'true' : 'false');
+        });
+      });
+    });
+  }
+
   function collectFields(container) {
     const els = fieldEls(container);
-    const data = { name: '', email: '', phone: '', company: '', message: '' };
+    const data = { name: '', email: '', phone: '', company: '', message: '', inquiryType: '', projectType: '', budget: '' };
     const used = new Set();
 
     els.forEach((el) => {
@@ -2669,6 +2724,14 @@ export async function GET() {
         if (el.tagName === 'INPUT' && (type === 'text' || type === '') && v.length <= 80) { data.name = v; used.add(el); break; }
       }
     }
+    const selected = Array.from(container.querySelectorAll('select')).filter((el) => (el.value || '').trim());
+    selected.forEach((el, index) => {
+      const v = (el.value || '').trim();
+      if (index === 0) data.projectType = v;
+      if (index === 1) data.budget = v;
+      used.add(el);
+    });
+    data.inquiryType = container.querySelector('.nf-inquiry-choice') ? (container.dataset.nguyenInquiryType || '') : '';
     const extras = [];
     els.forEach((el) => {
       const v = (el.value || '').trim();
@@ -2729,8 +2792,13 @@ export async function GET() {
     if (!container || container.__nguyenSubmitting) return;
     container.__nguyenSubmitting = true;
     const fields = collectFields(container);
-    if (!fields.name || !fields.email || !fields.phone) {
-      showBanner(container, false, 'Please fill in your name, email, and phone number.');
+    if (!fields.inquiryType) {
+      showBanner(container, false, 'Please choose Project Inquiry or Collaboration.');
+      container.__nguyenSubmitting = false;
+      return;
+    }
+    if (!fields.name || !fields.email || !fields.phone || !fields.projectType) {
+      showBanner(container, false, 'Please complete your name, email, phone number, and project type.');
       container.__nguyenSubmitting = false;
       return;
     }
@@ -2783,7 +2851,11 @@ export async function GET() {
     }, true);
   }
 
-  function scan() { document.querySelectorAll('form').forEach(interceptForm); }
+  function scan() {
+    const form = anyFormContainer();
+    if (form) ensureInquiryChoices(form);
+    document.querySelectorAll('form').forEach((item) => { ensureInquiryChoices(item); interceptForm(item); });
+  }
   scan();
   window.addEventListener('load', scan, { once: true });
   [300, 800, 2000, 4000].forEach((t) => setTimeout(scan, t));
@@ -2799,6 +2871,7 @@ export async function GET() {
   // The base layer's /ArcSphere/gi branding swap rewrites server-rendered "arcsphere" to
   // "NGUYEN", so cover both the raw and post-rebrand forms (harmless if client-rendered).
   html = html.replace(/hello@(?:arcsphere|nguyen)studio\.ae/gi, 'info@nguyenarchitecture.com')
+  html = html.replace('<head>', `<head>${FRAMER_FORM_INQUIRY_CAPTURE_PATCH}`)
   html = html.replace('</head>', `${DOCUMENT_TITLE_LOCK_PATCH}${FOOTER_FIRST_PAINT_STYLE}</head>`)
   html = html.replace('</body>', `${SPLIT_TEXT_PATCH}${BRAND_PATCH}${SQUARE_IMAGES_PATCH}${SERVICES_ANCHOR_PATCH}${MAIN_NAV_PATCH}${ENGINEERING_SERVICE_PATCH}${PROJECT_CARDS_PATCH}${DESIGN_PANELS_PATCH}${RESIDENTIAL_ROW_IMAGE_PATCH}${BLUEPRINT_IMAGE_PATCH}${PROCESS_TILE_IMAGE_PATCH}${CARD_ROUTING_PATCH}${EXTRA_CARD_CLEANUP_PATCH}${SERVICE_DROPDOWN_PATCH}${PROJECT_TYPE_SECTION_PATCH}${NON_LINKING_PROJECT_PANEL_PATCH}${FOOTER_PATCH}${FOOTER_NAV_PATCH}${ICON_BAR_PATCH}${TESTIMONIAL_PATCH}${HOMEPAGE_MOBILE_HERO_CROP}${HOMEPAGE_HERO_LOCK_PATCH}${HOMEPAGE_SIDE_HERO_LOCK_PATCH}${FRAMER_FORM_INTERCEPT_PATCH}${HERO_CTA_PATCH}${HOMEPAGE_INTRO_IMAGE_SWAP_PATCH}${PAGE_VISIBILITY_GUARD_PATCH}</body>`)
 
