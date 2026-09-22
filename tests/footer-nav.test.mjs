@@ -52,22 +52,16 @@ test('hiding the old nav never takes the social, legal or injected columns with 
   // Only the tightest container holding the labels is hidden; a wider one holds real content.
   assert.match(patch, /matches\.some\(\(other\) => other !== el && el\.contains\(other\)\)/);
 });
-test('mobile footer navigation remains a styled footer child with safe clearance below get-in-touch', () => {
-  assert.match(patch, /footer > \.nguyen-footer-links/);
-  assert.match(patch, /const leftReference = getInTouch \|\| heading \|\| original;/);
-  assert.match(patch, /Math\.max\(96, reference\.bottom - bounds\.top \+ 42\)/);
-  assert.match(patch, /var\(--footer-nav-mobile-top, 96px\)/);
-  assert.doesNotMatch(patch, /mobileFlowHost\.insertAdjacentElement/);
-  assert.doesNotMatch(patch, /data-nguyen-footer-mobile-nav-host/);
+test('mobile footer navigation flows directly after the visible get-in-touch label', () => {
+  assert.match(patch, /nguyen-footer-links--mobile-flow/);
+  assert.match(patch, /host\.insertBefore\(nav, getInTouch\.nextSibling\)/);
+  assert.match(patch, /position: static !important/);
+  assert.doesNotMatch(patch, /setProperty\('--footer-nav-mobile-top'/);
+  assert.doesNotMatch(patch, /reference\.bottom - bounds\.top \+ 42/);
 });
-test('mobile placement ignores hidden breakpoint copies of GET IN TOUCH', () => {
+test('mobile footer navigation selects only a visible get-in-touch label', () => {
   assert.match(patch, /getClientRects\(\)\.length === 0/);
-  assert.match(patch, /getComputedStyle\(current\)/);
-  assert.match(patch, /const leftReference = getInTouch \|\| heading \|\| original;/);
-});
-test('mobile placement ignores a GET IN TOUCH copy hidden by an ancestor', () => {
   assert.match(patch, /for \(let current = el; current && current !== footer; current = current\.parentElement\)/);
-  assert.match(patch, /style\.opacity === '0'/);
 });
 test('header navigation styling never targets footer links after scrolling', () => {
   const main = source.split('const MAIN_NAV_PATCH')[1].split('const ENGINEERING_SERVICE_PATCH')[0];
