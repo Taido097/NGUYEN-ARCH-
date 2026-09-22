@@ -52,17 +52,19 @@ test('hiding the old nav never takes the social, legal or injected columns with 
   // Only the tightest container holding the labels is hidden; a wider one holds real content.
   assert.match(patch, /matches\.some\(\(other\) => other !== el && el\.contains\(other\)\)/);
 });
-test('mobile footer navigation is placed below the get-in-touch text, not on top of the headline', () => {
-  assert.match(patch, /findFooterText/);
-  assert.match(patch, /GET IN TOUCH/);
-  assert.match(patch, /--footer-nav-mobile-top/);
-  assert.match(patch, /reference\.bottom - bounds\.top \+ 42/);
-  assert.doesNotMatch(patch, /data-framer-name="Contact Us"/);
+test('mobile footer navigation follows the visible get-in-touch heading in normal flow', () => {
+  assert.match(patch, /const mobileHost = getInTouch \|\| heading/);
+  assert.match(patch, /mobileFlowHost\.insertAdjacentElement\('afterend', nav\)/);
+  assert.match(patch, /data-nguyen-footer-mobile-nav-host/);
+  assert.match(patch, /footer \.nguyen-footer-links/);
+  assert.match(patch, /position: static !important/);
+  const mobileStyles = patch.split('@media (max-width: 809px) {')[1].split('</style>')[0];
+  assert.doesNotMatch(mobileStyles, /var\(--footer-nav-mobile-top/);
 });
 test('mobile placement ignores hidden breakpoint copies of GET IN TOUCH', () => {
   assert.match(patch, /getClientRects\(\)\.length === 0/);
   assert.match(patch, /getComputedStyle\(current\)/);
-  assert.match(patch, /const leftReference = getInTouch \|\| heading \|\| original;/);
+  assert.match(patch, /const mobileHost = getInTouch \|\| heading/);
 });
 test('mobile placement ignores a GET IN TOUCH copy hidden by an ancestor', () => {
   assert.match(patch, /for \(let current = el; current && current !== footer; current = current\.parentElement\)/);

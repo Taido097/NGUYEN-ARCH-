@@ -1441,18 +1441,28 @@ footer > .nguyen-footer-links > :is(a, button):focus-visible { text-decoration: 
   }
 }
 @media (max-width: 809px) {
-  footer > .nguyen-footer-links {
-    left: var(--footer-nav-mobile-left, 24px) !important;
-    top: var(--footer-nav-mobile-top, auto) !important;
+  /* Mobile placement is deliberately in normal flow. Framer swaps responsive footer copies after
+     hydration, which made any script-calculated absolute top value capable of overlapping the title. */
+  footer [data-nguyen-footer-mobile-nav-host="true"] {
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: flex-start !important;
+  }
+  footer .nguyen-footer-links {
+    position: static !important;
+    left: auto !important;
+    right: auto !important;
+    top: auto !important;
     width: min(220px, calc(100% - 48px)) !important;
     gap: 0 !important;
+    margin: 42px 0 0 !important;
   }
-  footer > .nguyen-footer-links {
+  footer .nguyen-footer-links {
     z-index: 9999 !important;
     pointer-events: auto !important;
     touch-action: manipulation !important;
   }
-  footer > .nguyen-footer-links > :is(a, button) {
+  footer .nguyen-footer-links > :is(a, button) {
     position: relative !important;
     z-index: 1 !important;
     min-height: 36px !important;
@@ -1566,7 +1576,7 @@ footer > .nguyen-footer-links > :is(a, button):focus-visible { text-decoration: 
       const original = footer.querySelector('[data-framer-name="footer-links"]');
       // Keep this broad wrapper active because it also owns the social and legal columns.
       if (getComputedStyle(footer).position === 'static') footer.style.position = 'relative';
-      let nav = footer.querySelector(':scope > .nguyen-footer-links');
+      let nav = footer.querySelector('.nguyen-footer-links');
       if (!nav) {
         nav = document.createElement('nav');
         nav.className = 'nguyen-footer-links';
@@ -1581,23 +1591,29 @@ footer > .nguyen-footer-links > :is(a, button):focus-visible { text-decoration: 
         });
         footer.appendChild(nav);
       }
-      const bounds = footer.getBoundingClientRect();
       const heading = footer.querySelector('h3, h2');
       const mobile = window.innerWidth <= 809;
       const compactFooter = window.innerWidth <= 1180;
       if (heading) heading.setAttribute('data-nguyen-footer-heading', 'true');
       const getInTouch = findFooterText(footer, 'GET IN TOUCH');
-      const refEl = mobile ? (getInTouch || heading || original) : (heading || original);
+      const mobileHost = getInTouch || heading;
+      const refEl = mobile ? (mobileHost || original) : (heading || original);
       if (!refEl) return;
       const reference = refEl.getBoundingClientRect();
       if (mobile) {
-        const leftReference = getInTouch || heading || original;
-        const left = leftReference ? Math.max(20, leftReference.getBoundingClientRect().left - bounds.left) : 24;
-        nav.style.setProperty('--footer-nav-mobile-top', Math.max(0, reference.bottom - bounds.top + 42) + 'px');
-        nav.style.setProperty('--footer-nav-mobile-left', left + 'px');
+        const mobileFlowHost = mobileHost?.closest('[data-framer-name="Contact Us"]') || mobileHost || original;
+        const mobileFlowParent = mobileFlowHost?.parentElement;
+        if (mobileFlowParent) {
+          mobileFlowParent.setAttribute('data-nguyen-footer-mobile-nav-host', 'true');
+          mobileFlowHost.insertAdjacentElement('afterend', nav);
+        }
         nav.style.removeProperty('--footer-nav-compact-top');
         nav.style.removeProperty('--footer-nav-compact-left');
+        nav.style.removeProperty('--footer-nav-mobile-top');
+        nav.style.removeProperty('--footer-nav-mobile-left');
       } else if (compactFooter) {
+        if (nav.parentElement !== footer) footer.appendChild(nav);
+        const bounds = footer.getBoundingClientRect();
         const leftReference = heading || original;
         const left = leftReference ? Math.max(24, leftReference.getBoundingClientRect().left - bounds.left) : 24;
         nav.style.setProperty('--footer-nav-compact-top', Math.max(0, reference.bottom - bounds.top + 32) + 'px');
@@ -1605,6 +1621,8 @@ footer > .nguyen-footer-links > :is(a, button):focus-visible { text-decoration: 
         nav.style.removeProperty('--footer-nav-mobile-top');
         nav.style.removeProperty('--footer-nav-mobile-left');
       } else {
+        if (nav.parentElement !== footer) footer.appendChild(nav);
+        const bounds = footer.getBoundingClientRect();
         nav.style.top = Math.max(0, reference.top - bounds.top - 12) + 'px';
         nav.style.removeProperty('--footer-nav-mobile-top');
         nav.style.removeProperty('--footer-nav-mobile-left');
