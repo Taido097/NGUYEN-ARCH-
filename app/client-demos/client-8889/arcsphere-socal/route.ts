@@ -1218,6 +1218,12 @@ const NON_LINKING_PROJECT_PANEL_PATCH = `
 [data-nguyen-non-linking-project-panel="true"] { cursor: default !important; }
 [data-nguyen-non-linking-project-panel="true"] a,
 [data-nguyen-non-linking-project-panel="true"] button { pointer-events: none !important; }
+/* The nearby Framer inquiry form is a real lead form, not a project-card link. */
+[data-nguyen-non-linking-project-panel="true"] [data-nguyen-inquiry-form="true"],
+[data-nguyen-non-linking-project-panel="true"] [data-nguyen-inquiry-form="true"] input,
+[data-nguyen-non-linking-project-panel="true"] [data-nguyen-inquiry-form="true"] textarea,
+[data-nguyen-non-linking-project-panel="true"] [data-nguyen-inquiry-form="true"] select,
+[data-nguyen-non-linking-project-panel="true"] [data-nguyen-inquiry-form="true"] button { pointer-events: auto !important; }
 </style>
 <script id="nguyen-socal-non-linking-project-panel-script">
 (() => {
@@ -1242,6 +1248,7 @@ const NON_LINKING_PROJECT_PANEL_PATCH = `
   }
   function blockPanelClicks(event) {
     const target = event.target?.nodeType === Node.TEXT_NODE ? event.target.parentElement : event.target;
+    if (target?.closest?.('input, textarea, select, button, [data-nguyen-inquiry-form="true"]')) return;
     if (!target?.closest?.('[data-nguyen-non-linking-project-panel="true"]')) return;
     event.preventDefault();
     event.stopPropagation();
