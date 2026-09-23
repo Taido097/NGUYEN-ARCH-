@@ -1414,7 +1414,7 @@ const FOOTER_PATCH = `
 const FOOTER_NAV_PATCH = `
 <style id="nguyen-footer-nav-styles">
 footer [data-nguyen-legacy-nav="true"],
-footer [data-nguyen-legacy-nav="true"] * { visibility: hidden !important; pointer-events: none !important; }
+footer [data-nguyen-legacy-nav="true"] * { display: none !important; visibility: hidden !important; pointer-events: none !important; }
 footer [data-nguyen-removed-footer-link="true"] {
   display: none !important;
   visibility: hidden !important;
@@ -1526,6 +1526,10 @@ footer > .nguyen-footer-links > :is(a, button):focus-visible { text-decoration: 
     if (el.getAttribute('data-nguyen-legacy-nav') !== 'true') el.setAttribute('data-nguyen-legacy-nav', 'true');
     if (el.getAttribute('aria-hidden') !== 'true') el.setAttribute('aria-hidden', 'true');
     if (!el.hasAttribute('inert')) el.setAttribute('inert', '');
+    if (el.style.getPropertyValue('display') !== 'none' ||
+        el.style.getPropertyPriority('display') !== 'important') {
+      el.style.setProperty('display', 'none', 'important');
+    }
     if (el.style.getPropertyValue('visibility') !== 'hidden' ||
         el.style.getPropertyPriority('visibility') !== 'important') {
       el.style.setProperty('visibility', 'hidden', 'important');
