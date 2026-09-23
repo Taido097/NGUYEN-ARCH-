@@ -1423,7 +1423,9 @@ footer [data-nguyen-removed-footer-link="true"] {
 footer > .nguyen-footer-links {
   position: absolute !important; right: clamp(24px, 11vw, 180px) !important; width: 136px !important;
   display: flex !important; flex-direction: column !important; gap: 4px !important;
-  margin: 0 !important; padding: 0 !important; z-index: 5;
+  margin: 0 !important; padding: 0 !important;
+  z-index: 2147483000 !important; pointer-events: auto !important; touch-action: manipulation !important;
+  isolation: isolate !important;
 }
 footer > .nguyen-footer-links > :is(a, button) {
   display: flex !important; align-items: center !important; min-height: 44px !important;
@@ -1432,6 +1434,8 @@ footer > .nguyen-footer-links > :is(a, button) {
   color: rgba(79,71,66,.8) !important; font: 500 14px/1.3 "Inter Display", Arial, sans-serif !important;
   letter-spacing: -.4px !important; text-decoration: none !important; border: 0 !important;
   border-radius: 0 !important; cursor: pointer !important;
+  position: relative !important; z-index: 1 !important;
+  pointer-events: auto !important; touch-action: manipulation !important;
 }
 footer > .nguyen-footer-links > :is(a, button):hover,
 footer > .nguyen-footer-links > :is(a, button):focus-visible { text-decoration: underline !important; text-underline-offset: 5px; color: #4f4742 !important; }
@@ -1540,6 +1544,38 @@ footer > .nguyen-footer-links > :is(a, button):focus-visible { text-decoration: 
     }
   }
 
+  function restoreLiveNavInteraction(nav, footer) {
+    if (!nav) return;
+    nav.removeAttribute('inert');
+    if (nav.getAttribute('aria-hidden') === 'true') nav.removeAttribute('aria-hidden');
+    nav.style.setProperty('pointer-events', 'auto', 'important');
+    nav.style.setProperty('z-index', '2147483000', 'important');
+
+    // A Framer breakpoint wrapper can be classified as legacy before the injected nav is
+    // moved into it. If that happens, the live links inherit inert / pointer-events:none
+    // even though they look normal. Only undo state on ancestors that this patch itself
+    // marked with data-nguyen-legacy-nav.
+    for (let node = nav.parentElement; node && node !== footer; node = node.parentElement) {
+      if (node.getAttribute('data-nguyen-legacy-nav') !== 'true') continue;
+      node.removeAttribute('data-nguyen-legacy-nav');
+      if (node.getAttribute('aria-hidden') === 'true') node.removeAttribute('aria-hidden');
+      if (node.hasAttribute('inert')) node.removeAttribute('inert');
+      if (node.style.getPropertyValue('display') === 'none' &&
+          node.style.getPropertyPriority('display') === 'important') node.style.removeProperty('display');
+      if (node.style.getPropertyValue('visibility') === 'hidden' &&
+          node.style.getPropertyPriority('visibility') === 'important') node.style.removeProperty('visibility');
+      if (node.style.getPropertyValue('pointer-events') === 'none' &&
+          node.style.getPropertyPriority('pointer-events') === 'important') node.style.removeProperty('pointer-events');
+    }
+
+    nav.querySelectorAll('[data-nguyen-footer-nav]').forEach((link) => {
+      link.removeAttribute('inert');
+      if (link.getAttribute('aria-hidden') === 'true') link.removeAttribute('aria-hidden');
+      link.style.setProperty('pointer-events', 'auto', 'important');
+      link.style.setProperty('touch-action', 'manipulation', 'important');
+    });
+  }
+
   function hideLegacyNavGroups(footer) {
     const matches = [];
     footer.querySelectorAll('*').forEach((el) => {
@@ -1616,6 +1652,7 @@ footer > .nguyen-footer-links > :is(a, button):focus-visible { text-decoration: 
         });
         footer.appendChild(nav);
       }
+      restoreLiveNavInteraction(nav, footer);
       const getInTouch = findFooterText(footer, 'GET IN TOUCH');
       // Exclude "GET IN TOUCH" itself from the heading lookup — it can be marked up as an
       // h2/h3, which made it match here and collapse the nav's position onto its own text.
@@ -1633,6 +1670,7 @@ footer > .nguyen-footer-links > :is(a, button):focus-visible { text-decoration: 
         if (nav.parentElement !== host || nav.previousElementSibling !== getInTouch) {
           host.insertBefore(nav, getInTouch.nextSibling);
         }
+        restoreLiveNavInteraction(nav, footer);
         nav.style.removeProperty('top');
         return;
       }
@@ -1644,12 +1682,14 @@ footer > .nguyen-footer-links > :is(a, button):focus-visible { text-decoration: 
         if (nav.parentElement !== compactHost || nav.previousElementSibling !== getInTouch) {
           compactHost.insertBefore(nav, getInTouch.nextSibling);
         }
+        restoreLiveNavInteraction(nav, footer);
         nav.style.removeProperty('top');
         return;
       }
 
       nav.classList.remove('nguyen-footer-links--compact-flow');
       if (nav.parentElement !== footer) footer.appendChild(nav);
+      restoreLiveNavInteraction(nav, footer);
       if (compactFooter) {
         // Tablet navigation keeps the existing direct-child flow layout.
         const anchor = getInTouch || heading || original;
