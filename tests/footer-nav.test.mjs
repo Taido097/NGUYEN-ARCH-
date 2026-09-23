@@ -59,6 +59,11 @@ test('hiding the old nav never takes the social, legal or injected columns with 
   // Only the tightest container holding the labels is hidden; a wider one holds real content.
   assert.match(patch, /matches\.some\(\(other\) => other !== el && el\.contains\(other\)\)/);
 });
+test('the legacy ABOUT fallback never disables a wrapper that contains the live footer navigation', () => {
+  // Framer can reparent breakpoint copies after the initial scan. The fallback must never mark a
+  // container as legacy when the injected five-link navigation is inside it.
+  assert.match(patch, /const aboutGroups[\s\S]*el\.querySelector\('\.nguyen-footer-links'\)\) return false/);
+});
 test('mobile footer navigation flows directly after the visible get-in-touch label', () => {
   assert.match(patch, /nguyen-footer-links--mobile-flow/);
   assert.match(patch, /host\.insertBefore\(nav, getInTouch\.nextSibling\)/);
