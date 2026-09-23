@@ -10,10 +10,11 @@ test('footer has an independent five-link navigation, not animated text matching
   assert.match(patch, /#featured-projects/);
   assert.doesNotMatch(patch, /commonAncestor|compact\(a.textContent\)/);
 });
-test('replacement is scoped to footer-links with a mobile position reset', () => {
+test('replacement is scoped to a direct-child footer navigation at every breakpoint', () => {
   assert.match(patch, /footer > \.nguyen-footer-links/);
-  assert.match(patch, /@media \(max-width: 809px\)/);
+  assert.match(patch, /@media \(max-width: 1180px\)/);
   assert.match(patch, /right: clamp\(24px, 11vw, 180px\)/);
+  assert.match(patch, /if \(nav\.parentElement !== footer\) footer\.appendChild\(nav\)/);
 });
 
 test('footer navigation never uses a fixed horizontal percentage that can overlap the heading', () => {
@@ -64,21 +65,43 @@ test('the legacy ABOUT fallback never disables a wrapper that contains the live 
   // container as legacy when the injected five-link navigation is inside it.
   assert.match(patch, /const aboutGroups[\s\S]*el\.querySelector\('\.nguyen-footer-links'\)\) return false/);
 });
-test('mobile footer navigation flows directly after the visible get-in-touch label', () => {
+test('live footer navigation is forced interactive above stale Framer hit areas', () => {
+  assert.match(patch, /z-index:\s*2147483000 !important; pointer-events:\s*auto !important/);
+  assert.match(patch, /footer > \\.nguyen-footer-links > :is\\(a, button\\)[\\s\\S]*pointer-events:\s*auto !important/);
+});
+
+test('a wrapper previously marked legacy is restored if the live nav is moved inside it', () => {
+  assert.match(patch, /function restoreLiveNavInteraction/);
+  assert.match(patch, /data-nguyen-legacy-nav/);
+  assert.match(patch, /removeAttribute\\('inert'\\)/);
+  assert.match(patch, /removeProperty\\('pointer-events'\\)/);
+  assert.match(patch, /restoreLiveNavInteraction\\(nav, footer\\)/);
+});
+
+test('footer navigation uses one first-click route without cancelling pointerdown', () => {
+  assert.match(patch, /window\.addEventListener\('pointerup'/);
+  assert.match(patch, /function footerLinkFromEvent/);
+  assert.match(patch, /function followFooterLink/);
+  assert.match(patch, /window\.location\.assign\(href\)/);
+  assert.doesNotMatch(patch, /window\.addEventListener\('pointerdown'/);
+});
+
+test('mobile footer navigation stays outside Framer wrappers and positions from get-in-touch', () => {
   assert.match(patch, /nguyen-footer-links--mobile-flow/);
-  assert.match(patch, /host\.insertBefore\(nav, getInTouch\.nextSibling\)/);
-  assert.match(patch, /position: static !important/);
-  assert.doesNotMatch(patch, /setProperty\('--footer-nav-mobile-top'/);
-  assert.doesNotMatch(patch, /reference\.bottom - bounds\.top \+ 42/);
+  assert.match(patch, /if \(nav\.parentElement !== footer\) footer\.appendChild\(nav\)/);
+  assert.match(patch, /reference\.bottom - bounds\.top \+ 24/);
+  assert.doesNotMatch(patch, /host\.insertBefore\(nav, getInTouch\.nextSibling\)/);
+  assert.doesNotMatch(patch, /position: static !important/);
 });
 test('mobile footer navigation selects only a visible get-in-touch label', () => {
   assert.match(patch, /getClientRects\(\)\.length === 0/);
   assert.match(patch, /for \(let current = el; current && current !== footer; current = current\.parentElement\)/);
 });
-test('tablet footer navigation follows get-in-touch rather than the contact row', () => {
+test('tablet footer navigation stays a direct footer child and uses the visible get-in-touch anchor', () => {
   assert.match(patch, /nguyen-footer-links--compact-flow/);
-  assert.match(patch, /compactHost\.insertBefore\(nav, getInTouch\.nextSibling\)/);
-  assert.match(patch, /@media \(max-width: 1180px\) and \(min-width: 810px\)/);
+  assert.match(patch, /const anchor = getInTouch \|\| heading \|\| original/);
+  assert.match(patch, /@media \(max-width: 1180px\)/);
+  assert.doesNotMatch(patch, /compactHost\.insertBefore/);
 });
 test('header navigation styling never targets footer links after scrolling', () => {
   const main = source.split('const MAIN_NAV_PATCH')[1].split('const ENGINEERING_SERVICE_PATCH')[0];

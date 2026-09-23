@@ -1423,7 +1423,9 @@ footer [data-nguyen-removed-footer-link="true"] {
 footer > .nguyen-footer-links {
   position: absolute !important; right: clamp(24px, 11vw, 180px) !important; width: 136px !important;
   display: flex !important; flex-direction: column !important; gap: 4px !important;
-  margin: 0 !important; padding: 0 !important; z-index: 5;
+  margin: 0 !important; padding: 0 !important;
+  z-index: 2147483000 !important; pointer-events: auto !important; touch-action: manipulation !important;
+  isolation: isolate !important;
 }
 footer > .nguyen-footer-links > :is(a, button) {
   display: flex !important; align-items: center !important; min-height: 44px !important;
@@ -1432,24 +1434,29 @@ footer > .nguyen-footer-links > :is(a, button) {
   color: rgba(79,71,66,.8) !important; font: 500 14px/1.3 "Inter Display", Arial, sans-serif !important;
   letter-spacing: -.4px !important; text-decoration: none !important; border: 0 !important;
   border-radius: 0 !important; cursor: pointer !important;
+  position: relative !important; z-index: 1 !important;
+  pointer-events: auto !important; touch-action: manipulation !important;
 }
 footer > .nguyen-footer-links > :is(a, button):hover,
 footer > .nguyen-footer-links > :is(a, button):focus-visible { text-decoration: underline !important; text-underline-offset: 5px; color: #4f4742 !important; }
 @media (min-width: 1181px) {
   footer [data-nguyen-footer-heading="true"] { max-width: calc(100% - 360px) !important; }
 }
-@media (max-width: 1180px) and (min-width: 810px) {
-  footer .nguyen-footer-links.nguyen-footer-links--compact-flow {
-    position: static !important;
-    right: auto !important; left: auto !important; top: auto !important;
+@media (max-width: 1180px) {
+  footer > .nguyen-footer-links.nguyen-footer-links--compact-flow,
+  footer > .nguyen-footer-links.nguyen-footer-links--mobile-flow {
+    position: absolute !important;
+    right: auto !important;
     display: flex !important; flex-direction: column !important;
     width: min(220px, calc(100% - 48px)) !important;
-    margin: 24px 0 0 !important;
-    padding: 0 !important;
+    margin: 0 !important; padding: 0 !important;
     gap: 0 !important;
-    z-index: 5 !important;
+    z-index: 2147483000 !important;
+    pointer-events: auto !important;
+    touch-action: manipulation !important;
   }
-  footer .nguyen-footer-links.nguyen-footer-links--compact-flow > :is(a, button) {
+  footer > .nguyen-footer-links.nguyen-footer-links--compact-flow > :is(a, button),
+  footer > .nguyen-footer-links.nguyen-footer-links--mobile-flow > :is(a, button) {
     display: flex !important; align-items: center !important;
     position: relative !important; z-index: 1 !important;
     min-height: 36px !important;
@@ -1461,33 +1468,6 @@ footer > .nguyen-footer-links > :is(a, button):focus-visible { text-decoration: 
     cursor: pointer !important; visibility: visible !important;
     transform: none !important; background: transparent !important;
     pointer-events: auto !important; touch-action: manipulation !important;
-  }
-}
-@media (max-width: 809px) {
-  footer .nguyen-footer-links.nguyen-footer-links--mobile-flow {
-    position: static !important;
-    right: auto !important; left: auto !important; top: auto !important;
-    display: flex !important; flex-direction: column !important;
-    width: min(220px, calc(100% - 48px)) !important;
-    margin: 24px 0 0 !important;
-    padding: 0 !important;
-    gap: 0 !important;
-    z-index: 5 !important;
-  }
-  footer .nguyen-footer-links.nguyen-footer-links--mobile-flow > :is(a, button) {
-    display: flex !important; align-items: center !important;
-    position: relative !important;
-    z-index: 1 !important;
-    min-height: 36px !important;
-    margin: 0 !important; padding: 0 !important;
-    color: rgba(79,71,66,.8) !important;
-    font: 500 14px/1.3 "Inter Display", Arial, sans-serif !important;
-    letter-spacing: -.4px !important; text-decoration: none !important;
-    border: 0 !important; border-radius: 0 !important;
-    cursor: pointer !important; visibility: visible !important;
-    transform: none !important; background: transparent !important;
-    pointer-events: auto !important;
-    touch-action: manipulation !important;
   }
 }
 </style>
@@ -1538,6 +1518,38 @@ footer > .nguyen-footer-links > :is(a, button):focus-visible { text-decoration: 
         el.style.getPropertyPriority('pointer-events') !== 'important') {
       el.style.setProperty('pointer-events', 'none', 'important');
     }
+  }
+
+  function restoreLiveNavInteraction(nav, footer) {
+    if (!nav) return;
+    nav.removeAttribute('inert');
+    if (nav.getAttribute('aria-hidden') === 'true') nav.removeAttribute('aria-hidden');
+    nav.style.setProperty('pointer-events', 'auto', 'important');
+    nav.style.setProperty('z-index', '2147483000', 'important');
+
+    // A Framer breakpoint wrapper can be classified as legacy before the injected nav is
+    // moved into it. If that happens, the live links inherit inert / pointer-events:none
+    // even though they look normal. Only undo state on ancestors that this patch itself
+    // marked with data-nguyen-legacy-nav.
+    for (let node = nav.parentElement; node && node !== footer; node = node.parentElement) {
+      if (node.getAttribute('data-nguyen-legacy-nav') !== 'true') continue;
+      node.removeAttribute('data-nguyen-legacy-nav');
+      if (node.getAttribute('aria-hidden') === 'true') node.removeAttribute('aria-hidden');
+      if (node.hasAttribute('inert')) node.removeAttribute('inert');
+      if (node.style.getPropertyValue('display') === 'none' &&
+          node.style.getPropertyPriority('display') === 'important') node.style.removeProperty('display');
+      if (node.style.getPropertyValue('visibility') === 'hidden' &&
+          node.style.getPropertyPriority('visibility') === 'important') node.style.removeProperty('visibility');
+      if (node.style.getPropertyValue('pointer-events') === 'none' &&
+          node.style.getPropertyPriority('pointer-events') === 'important') node.style.removeProperty('pointer-events');
+    }
+
+    nav.querySelectorAll('[data-nguyen-footer-nav]').forEach((link) => {
+      link.removeAttribute('inert');
+      if (link.getAttribute('aria-hidden') === 'true') link.removeAttribute('aria-hidden');
+      link.style.setProperty('pointer-events', 'auto', 'important');
+      link.style.setProperty('touch-action', 'manipulation', 'important');
+    });
   }
 
   function hideLegacyNavGroups(footer) {
@@ -1616,6 +1628,7 @@ footer > .nguyen-footer-links > :is(a, button):focus-visible { text-decoration: 
         });
         footer.appendChild(nav);
       }
+      restoreLiveNavInteraction(nav, footer);
       const getInTouch = findFooterText(footer, 'GET IN TOUCH');
       // Exclude "GET IN TOUCH" itself from the heading lookup — it can be marked up as an
       // h2/h3, which made it match here and collapse the nav's position onto its own text.
@@ -1624,47 +1637,29 @@ footer > .nguyen-footer-links > :is(a, button):focus-visible { text-decoration: 
       const compactFooter = window.innerWidth <= 1180;
       if (heading) heading.setAttribute('data-nguyen-footer-heading', 'true');
 
-      if (mobile && getInTouch?.parentElement) {
-        // The active label and navigation share one mobile flow container. This guarantees the
-        // navigation starts after the label, rather than trying to predict Framer's final height.
-        const host = getInTouch.parentElement;
-        nav.classList.remove('nguyen-footer-links--compact-flow');
-        nav.classList.add('nguyen-footer-links--mobile-flow');
-        if (nav.parentElement !== host || nav.previousElementSibling !== getInTouch) {
-          host.insertBefore(nav, getInTouch.nextSibling);
-        }
-        nav.style.removeProperty('top');
-        return;
-      }
-
-      nav.classList.remove('nguyen-footer-links--mobile-flow');
-      if (compactFooter && getInTouch?.parentElement) {
-        const compactHost = getInTouch.parentElement;
-        nav.classList.add('nguyen-footer-links--compact-flow');
-        if (nav.parentElement !== compactHost || nav.previousElementSibling !== getInTouch) {
-          compactHost.insertBefore(nav, getInTouch.nextSibling);
-        }
-        nav.style.removeProperty('top');
-        return;
-      }
-
-      nav.classList.remove('nguyen-footer-links--compact-flow');
+      // Keep the live navigation as a direct footer child on every breakpoint.
+      // Moving it into Framer's breakpoint wrappers made it inherit stale inert/pointer-event
+      // state and also placed it behind transparent Framer hit areas.
       if (nav.parentElement !== footer) footer.appendChild(nav);
-      if (compactFooter) {
-        // Tablet navigation keeps the existing direct-child flow layout.
-        const anchor = getInTouch || heading || original;
-        let topLevel = anchor;
-        while (topLevel && topLevel.parentElement && topLevel.parentElement !== footer) {
-          topLevel = topLevel.parentElement;
-        }
-        if (topLevel && topLevel.parentElement === footer && topLevel.nextElementSibling !== nav) {
-          topLevel.insertAdjacentElement('afterend', nav);
-        }
-        nav.style.removeProperty('top');
-        return;
-      }
+      restoreLiveNavInteraction(nav, footer);
 
       const bounds = footer.getBoundingClientRect();
+      if (compactFooter) {
+        nav.classList.toggle('nguyen-footer-links--mobile-flow', mobile);
+        nav.classList.toggle('nguyen-footer-links--compact-flow', !mobile);
+        const anchor = getInTouch || heading || original;
+        if (!anchor) return;
+        const reference = anchor.getBoundingClientRect();
+        const left = Math.max(24, Math.min(bounds.width - 244, reference.left - bounds.left));
+        nav.style.left = left + 'px';
+        nav.style.right = 'auto';
+        nav.style.top = Math.max(0, reference.bottom - bounds.top + 24) + 'px';
+        return;
+      }
+
+      nav.classList.remove('nguyen-footer-links--mobile-flow', 'nguyen-footer-links--compact-flow');
+      nav.style.removeProperty('left');
+      nav.style.removeProperty('right');
 
       const refEl = heading || original;
       if (!refEl) return;
@@ -1697,45 +1692,42 @@ footer > .nguyen-footer-links > :is(a, button):focus-visible { text-decoration: 
     seek();
   }
 
-  // Route on pointerdown before Framer's older window-level click handler can swallow
-  // the interaction or reroute SERVICES to the ADU page. Pointer events cover touch and mouse.
-  window.addEventListener('pointerdown', (event) => {
-    const link = event.target?.closest?.('.nguyen-footer-links [data-nguyen-footer-nav]');
+  function footerLinkFromEvent(event) {
+    const path = typeof event.composedPath === 'function' ? event.composedPath() : [];
+    const fromPath = path.find((node) => node?.matches?.('.nguyen-footer-links [data-nguyen-footer-nav]'));
+    if (fromPath) return fromPath;
+    const target = event.target?.nodeType === Node.TEXT_NODE ? event.target.parentElement : event.target;
+    return target?.closest?.('.nguyen-footer-links [data-nguyen-footer-nav]') || null;
+  }
+
+  function followFooterLink(link) {
+    if (!link) return;
+    const href = link.getAttribute('data-nguyen-footer-href') || link.href;
+    if (!href) return;
+    // Use the real URL for every footer action. This avoids Framer's smooth-scroll/routing
+    // handlers and makes HOME, SERVICES, PROJECTS, PROCESS and CONTACT all respond once.
+    window.location.assign(href);
+  }
+
+  // Do not cancel pointerdown: cancelling it suppressed the native click and made users
+  // click repeatedly. Pointerup is not used by Framer's old click router, so it can route
+  // immediately on the first mouse/touch interaction while the anchor href remains a fallback.
+  window.addEventListener('pointerup', (event) => {
+    const link = footerLinkFromEvent(event);
     if (!link) return;
     event.preventDefault();
     event.stopPropagation();
     if (event.stopImmediatePropagation) event.stopImmediatePropagation();
-    const url = new URL(link.getAttribute('data-nguyen-footer-href') || link.href);
-    const key = link.getAttribute('data-nguyen-footer-nav');
-    if (key === 'home' && url.pathname === location.pathname) {
-      // Reload the clean homepage URL so Framer cannot restore the footer/hash scroll position.
-      location.assign(url.href);
-      return;
-    }
-    const target = url.pathname === location.pathname && url.hash && document.getElementById(url.hash.slice(1));
-    if (target) {
-      target.scrollIntoView({ behavior: 'smooth', block: 'start' });
-      history.replaceState(null, '', url.hash);
-    } else location.href = url.href;
+    followFooterLink(link);
   }, true);
 
   document.addEventListener('click', (event) => {
-    const link = event.target?.closest?.('.nguyen-footer-links [data-nguyen-footer-nav]');
+    const link = footerLinkFromEvent(event);
     if (link) {
+      // Keyboard activation and browsers without Pointer Events use the same one-step route.
       event.preventDefault();
       event.stopImmediatePropagation();
-      const url = new URL(link.getAttribute('data-nguyen-footer-href') || link.href);
-      const key = link.getAttribute('data-nguyen-footer-nav');
-      if (key === 'home' && url.pathname === location.pathname) {
-        // Reload the clean homepage URL so Framer cannot restore the footer/hash scroll position.
-        location.assign(url.href);
-        return;
-      }
-      const target = url.pathname === location.pathname && url.hash && document.getElementById(url.hash.slice(1));
-      if (target) {
-        target.scrollIntoView({ behavior: 'smooth', block: 'start' });
-        history.replaceState(null, '', url.hash);
-      } else location.href = url.href;
+      followFooterLink(link);
       return;
     }
     // The base arcsphere layer's fixNav sets unrecognized footer anchors to the homepage URL
