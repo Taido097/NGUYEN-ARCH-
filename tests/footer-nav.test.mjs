@@ -122,6 +122,16 @@ test('mobile project-panel blocker cannot disable homepage links', () => {
   assert.match(blocker, /removeAttribute\('data-nguyen-non-linking-project-panel'\)/);
   assert.match(blocker, /if \(window\.innerWidth <= 809\) return;/);
 });
+test('mobile service, featured-project and expertise cards route on pointerup', () => {
+  const mobile = source.split('const MOBILE_SECTION_TAP_PATCH = `')[1].split('const PAGE_VISIBILITY_GUARD_PATCH')[0];
+  assert.match(mobile, /data-nguyen-link/);
+  assert.match(mobile, /data-nguyen-card-url/);
+  assert.match(mobile, /data-nguyen-panel-url/);
+  assert.match(mobile, /window\.addEventListener\('pointerup'/);
+  assert.match(mobile, /window\.location\.assign\(href\)/);
+  assert.match(mobile, /dx > 14 \|\| dy > 14/);
+  assert.match(mobile, /window\.innerWidth > 809/);
+});
 test('header navigation styling never targets footer links after scrolling', () => {
   const main = source.split('const MAIN_NAV_PATCH')[1].split('const ENGINEERING_SERVICE_PATCH')[0];
   assert.match(main, /anchor\.closest\('footer'\)/);
