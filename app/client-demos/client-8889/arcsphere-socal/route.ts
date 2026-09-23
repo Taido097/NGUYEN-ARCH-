@@ -2721,6 +2721,90 @@ const HOMEPAGE_INTRO_IMAGE_SWAP_PATCH = `
 })();
 </script>`
 
+const MOBILE_SECTION_TAP_PATCH = `
+<style id="nguyen-socal-mobile-section-taps-style">
+@media (max-width: 809px) {
+  [data-nguyen-link],
+  [data-nguyen-card-url],
+  [data-nguyen-panel-url] {
+    pointer-events: auto !important;
+    touch-action: manipulation !important;
+    cursor: pointer !important;
+  }
+}
+</style>
+<script id="nguyen-socal-mobile-section-taps">
+(() => {
+  let pointerStart = null;
+  let routedAt = 0;
+
+  function routeTarget(start) {
+    if (!start?.closest || window.innerWidth > 809) return null;
+    if (start.closest('form, input, textarea, select, [role="textbox"], [role="combobox"], footer, header, nav')) return null;
+
+    const el = start.closest('[data-nguyen-link], [data-nguyen-card-url], [data-nguyen-panel-url]');
+    if (!el) return null;
+
+    const href =
+      el.getAttribute('data-nguyen-link') ||
+      el.getAttribute('data-nguyen-card-url') ||
+      el.getAttribute('data-nguyen-panel-url');
+
+    if (!href) return null;
+    return { el, href };
+  }
+
+  window.addEventListener('pointerdown', (event) => {
+    if (window.innerWidth > 809) return;
+    const start = event.target?.nodeType === Node.TEXT_NODE ? event.target.parentElement : event.target;
+    const route = routeTarget(start);
+    pointerStart = route ? {
+      pointerId: event.pointerId,
+      x: event.clientX,
+      y: event.clientY,
+      href: route.href
+    } : null;
+  }, true);
+
+  window.addEventListener('pointerup', (event) => {
+    if (window.innerWidth > 809 || !pointerStart) return;
+    if (event.pointerId !== pointerStart.pointerId) { pointerStart = null; return; }
+
+    const start = event.target?.nodeType === Node.TEXT_NODE ? event.target.parentElement : event.target;
+    const route = routeTarget(start);
+    const dx = Math.abs(event.clientX - pointerStart.x);
+    const dy = Math.abs(event.clientY - pointerStart.y);
+    const href = route?.href || pointerStart.href;
+    pointerStart = null;
+
+    // Treat only a real tap as navigation; scrolling across a card must not open it.
+    if (!href || dx > 14 || dy > 14) return;
+
+    event.preventDefault();
+    event.stopPropagation();
+    if (event.stopImmediatePropagation) event.stopImmediatePropagation();
+    routedAt = Date.now();
+    window.location.assign(href);
+  }, true);
+
+  // Browser fallback for keyboard/older touch behavior. Also swallow the synthetic click
+  // generated immediately after a pointerup that already navigated.
+  window.addEventListener('click', (event) => {
+    if (window.innerWidth > 809) return;
+    const start = event.target?.nodeType === Node.TEXT_NODE ? event.target.parentElement : event.target;
+    const route = routeTarget(start);
+    if (!route) return;
+
+    event.preventDefault();
+    event.stopPropagation();
+    if (event.stopImmediatePropagation) event.stopImmediatePropagation();
+
+    if (Date.now() - routedAt < 800) return;
+    window.location.assign(route.href);
+  }, true);
+})();
+</script>`
+
 const PAGE_VISIBILITY_GUARD_PATCH = `
 <script id="nguyen-socal-page-visibility-guard">
 (() => {
@@ -3052,7 +3136,7 @@ const FRAMER_FORM_INQUIRY_CAPTURE_PATCH = `
   html = html.replace(/hello@(?:arcsphere|nguyen)studio\.ae/gi, 'info@nguyenarchitecture.com')
   html = html.replace('<head>', `<head>${FRAMER_FORM_INQUIRY_CAPTURE_PATCH}`)
   html = html.replace('</head>', `${DOCUMENT_TITLE_LOCK_PATCH}${FOOTER_FIRST_PAINT_STYLE}</head>`)
-  html = html.replace('</body>', `${SPLIT_TEXT_PATCH}${BRAND_PATCH}${SQUARE_IMAGES_PATCH}${SERVICES_ANCHOR_PATCH}${MAIN_NAV_PATCH}${ENGINEERING_SERVICE_PATCH}${PROJECT_CARDS_PATCH}${DESIGN_PANELS_PATCH}${RESIDENTIAL_ROW_IMAGE_PATCH}${BLUEPRINT_IMAGE_PATCH}${PROCESS_TILE_IMAGE_PATCH}${CARD_ROUTING_PATCH}${EXTRA_CARD_CLEANUP_PATCH}${SERVICE_DROPDOWN_PATCH}${PROJECT_TYPE_SECTION_PATCH}${NON_LINKING_PROJECT_PANEL_PATCH}${FOOTER_PATCH}${FOOTER_NAV_PATCH}${ICON_BAR_PATCH}${TESTIMONIAL_PATCH}${HOMEPAGE_MOBILE_HERO_CROP}${HOMEPAGE_HERO_LOCK_PATCH}${HOMEPAGE_SIDE_HERO_LOCK_PATCH}${FRAMER_FORM_INTERCEPT_PATCH}${HERO_CTA_PATCH}${HOMEPAGE_INTRO_IMAGE_SWAP_PATCH}${PAGE_VISIBILITY_GUARD_PATCH}</body>`)
+  html = html.replace('</body>', `${SPLIT_TEXT_PATCH}${BRAND_PATCH}${SQUARE_IMAGES_PATCH}${SERVICES_ANCHOR_PATCH}${MAIN_NAV_PATCH}${ENGINEERING_SERVICE_PATCH}${PROJECT_CARDS_PATCH}${DESIGN_PANELS_PATCH}${RESIDENTIAL_ROW_IMAGE_PATCH}${BLUEPRINT_IMAGE_PATCH}${PROCESS_TILE_IMAGE_PATCH}${CARD_ROUTING_PATCH}${EXTRA_CARD_CLEANUP_PATCH}${SERVICE_DROPDOWN_PATCH}${PROJECT_TYPE_SECTION_PATCH}${NON_LINKING_PROJECT_PANEL_PATCH}${MOBILE_SECTION_TAP_PATCH}${FOOTER_PATCH}${FOOTER_NAV_PATCH}${ICON_BAR_PATCH}${TESTIMONIAL_PATCH}${HOMEPAGE_MOBILE_HERO_CROP}${HOMEPAGE_HERO_LOCK_PATCH}${HOMEPAGE_SIDE_HERO_LOCK_PATCH}${FRAMER_FORM_INTERCEPT_PATCH}${HERO_CTA_PATCH}${HOMEPAGE_INTRO_IMAGE_SWAP_PATCH}${PAGE_VISIBILITY_GUARD_PATCH}</body>`)
 
   const headers = new Headers(response.headers)
   headers.set('Content-Type', 'text/html; charset=utf-8')
