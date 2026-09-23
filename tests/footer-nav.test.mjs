@@ -86,17 +86,26 @@ test('footer navigation uses one first-click route without cancelling pointerdow
   assert.doesNotMatch(patch, /window\.addEventListener\('pointerdown'/);
 });
 
-test('phone footer removes the injected overlay and reuses the native Framer menu', () => {
+test('phone footer removes the injected overlay and creates an in-flow controlled nav', () => {
   assert.match(patch, /function enableNativeMobileFooter/);
   assert.match(patch, /footer\.querySelectorAll\(':scope > \.nguyen-footer-links'\)\.forEach\(\(nav\) => nav\.remove\(\)\)/);
   assert.match(patch, /footer\.querySelector\('\[data-framer-name="footer-links"\]'\)/);
-  assert.match(patch, /data-nguyen-mobile-footer-nav/);
-  assert.match(patch, /data-nguyen-mobile-footer-about/);
+  assert.match(patch, /createElement\('nav'\)/);
+  assert.match(patch, /nguyen-mobile-footer-links/);
+  assert.match(patch, /\['home', 'services', 'projects', 'process', 'contact'\]/);
+  assert.doesNotMatch(patch, /data-nguyen-mobile-footer-about/);
 });
-test('phone footer links route once through native anchors without a floating pointer layer', () => {
-  assert.match(patch, /nativeMobileLink/);
-  assert.match(patch, /window\.location\.assign\(nativeMobileLink\.getAttribute\('data-nguyen-footer-href'\)/);
+test('phone footer links route on first pointerup without a floating hit layer', () => {
+  assert.match(patch, /window\.addEventListener\('pointerup'/);
+  assert.match(patch, /nguyen-mobile-footer-links \[data-nguyen-mobile-footer-nav\]/);
+  assert.match(patch, /window\.location\.assign\(mobileLink\.getAttribute\('data-nguyen-footer-href'\)/);
   assert.match(patch, /footer\[data-framer-name="Phone"\] > \.nguyen-footer-links[\s\S]*display: none !important/);
+  assert.match(patch, /footer\[data-framer-name="Phone"\] \.nguyen-mobile-footer-links[\s\S]*position: relative !important/);
+});
+test('phone footer restores pointer events through the nav ancestor path', () => {
+  assert.match(patch, /function restoreMobileFooterPath/);
+  assert.match(patch, /current\.style\.setProperty\('pointer-events', 'auto', 'important'\)/);
+  assert.match(patch, /restoreMobileFooterPath\(nav, footer\)/);
 });
 test('tablet footer navigation stays a direct footer child and uses the visible get-in-touch anchor', () => {
   assert.match(patch, /nguyen-footer-links--compact-flow/);
