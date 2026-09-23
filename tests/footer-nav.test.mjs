@@ -64,6 +64,19 @@ test('the legacy ABOUT fallback never disables a wrapper that contains the live 
   // container as legacy when the injected five-link navigation is inside it.
   assert.match(patch, /const aboutGroups[\s\S]*el\.querySelector\('\.nguyen-footer-links'\)\) return false/);
 });
+test('live footer navigation is forced interactive above stale Framer hit areas', () => {
+  assert.match(patch, /z-index:\s*2147483000 !important; pointer-events:\s*auto !important/);
+  assert.match(patch, /footer > \\.nguyen-footer-links > :is\\(a, button\\)[\\s\\S]*pointer-events:\s*auto !important/);
+});
+
+test('a wrapper previously marked legacy is restored if the live nav is moved inside it', () => {
+  assert.match(patch, /function restoreLiveNavInteraction/);
+  assert.match(patch, /data-nguyen-legacy-nav/);
+  assert.match(patch, /removeAttribute\\('inert'\\)/);
+  assert.match(patch, /removeProperty\\('pointer-events'\\)/);
+  assert.match(patch, /restoreLiveNavInteraction\\(nav, footer\\)/);
+});
+
 test('mobile footer navigation flows directly after the visible get-in-touch label', () => {
   assert.match(patch, /nguyen-footer-links--mobile-flow/);
   assert.match(patch, /host\.insertBefore\(nav, getInTouch\.nextSibling\)/);
