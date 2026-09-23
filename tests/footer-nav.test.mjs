@@ -44,6 +44,12 @@ test('breakpoint copies of the old nav are hidden by label, not only by Framer n
   assert.match(patch, /LEGACY_NAV_LABELS/);
   assert.match(patch, /document\.querySelectorAll\('footer'\)\.forEach\(hideLegacyNavGroups\)/);
 });
+test('the old six-link footer group is removed from layout and cannot leave click targets behind', () => {
+  // The old HOME / ABOUT / SERVICES / PROJECTS / PROCESS / CONTACT group is not a fallback:
+  // keeping it merely invisible still leaves a second column and can preserve stale hit areas.
+  assert.match(patch, /footer \[data-nguyen-legacy-nav="true"\][\s\S]*display: none !important/);
+  assert.match(patch, /function hideLegacyElement[\s\S]*setProperty\('display', 'none', 'important'\)/);
+});
 test('hiding the old nav never takes the social, legal or injected columns with it', () => {
   assert.match(patch, /OTHER_COLUMN_LABELS/);
   assert.match(patch, /pinterest/);
