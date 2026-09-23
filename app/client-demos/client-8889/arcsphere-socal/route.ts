@@ -1224,10 +1224,27 @@ const NON_LINKING_PROJECT_PANEL_PATCH = `
 [data-nguyen-non-linking-project-panel="true"] [data-nguyen-inquiry-form="true"] textarea,
 [data-nguyen-non-linking-project-panel="true"] [data-nguyen-inquiry-form="true"] select,
 [data-nguyen-non-linking-project-panel="true"] [data-nguyen-inquiry-form="true"] button { pointer-events: auto !important; }
+@media (max-width: 809px) {
+  /* Mobile safety: the Framer phone layout can make the marked project-panel wrapper
+     span most of the page. Never disable descendant links/buttons on phones. */
+  [data-nguyen-non-linking-project-panel="true"] a,
+  [data-nguyen-non-linking-project-panel="true"] button {
+    pointer-events: auto !important;
+  }
+}
 </style>
 <script id="nguyen-socal-non-linking-project-panel-script">
 (() => {
+  function clearMobilePanelBlockers() {
+    if (window.innerWidth > 809) return false;
+    document.querySelectorAll('[data-nguyen-non-linking-project-panel="true"]').forEach((el) => {
+      el.removeAttribute('data-nguyen-non-linking-project-panel');
+    });
+    return true;
+  }
+
   function markPanel() {
+    if (clearMobilePanelBlockers()) return;
     const heading = Array.from(document.querySelectorAll('h1,h2,h3,h4,h5,h6,p,span,div')).find((el) => {
       const text = (el.textContent || '').replace(/\\s+/g, ' ').trim().toLowerCase();
       return text === "let's talk about your projects" &&
@@ -1247,6 +1264,7 @@ const NON_LINKING_PROJECT_PANEL_PATCH = `
     if (panel && panel !== document.body) panel.setAttribute('data-nguyen-non-linking-project-panel', 'true');
   }
   function blockPanelClicks(event) {
+    if (window.innerWidth <= 809) return;
     const target = event.target?.nodeType === Node.TEXT_NODE ? event.target.parentElement : event.target;
     if (target?.closest?.('input, textarea, select, button, [data-nguyen-inquiry-form="true"]')) return;
     if (!target?.closest?.('[data-nguyen-non-linking-project-panel="true"]')) return;
@@ -1256,6 +1274,9 @@ const NON_LINKING_PROJECT_PANEL_PATCH = `
   }
   markPanel();
   window.addEventListener('load', markPanel, { once: true });
+  window.addEventListener('resize', () => {
+    if (!clearMobilePanelBlockers()) markPanel();
+  });
   [300, 800, 1500, 3000, 6000, 10000].forEach((delay) => setTimeout(markPanel, delay));
   window.addEventListener('click', blockPanelClicks, true);
   window.addEventListener('keydown', (event) => {
