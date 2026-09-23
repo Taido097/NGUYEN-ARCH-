@@ -1561,6 +1561,7 @@ footer > .nguyen-footer-links > :is(a, button):focus-visible { text-decoration: 
     // When that happens, identify the legacy navigation specifically by its ABOUT link and full link set.
     const aboutGroups = Array.from(footer.querySelectorAll('*')).filter((el) => {
       if (el.classList.contains('nguyen-footer-links') || el.closest('.nguyen-footer-links')) return false;
+      if (el.querySelector('.nguyen-footer-links')) return false;
       const text = compact(el.textContent);
       return text.indexOf('about') !== -1 &&
         ['home', 'services', 'projects', 'process', 'contact'].every((label) => text.indexOf(label) !== -1) &&
