@@ -1443,18 +1443,52 @@ footer > .nguyen-footer-links > :is(a, button):focus-visible { text-decoration: 
   footer [data-nguyen-footer-heading="true"] { max-width: calc(100% - 360px) !important; }
 }
 @media (max-width: 809px) {
-  /* Phone only: use Framer's native footer menu in its original flow. The injected
-     direct-child nav must not exist as a floating/high-z hit layer on mobile. */
+  /* Phone only: keep navigation in normal footer flow. Never allow a floating/high-z
+     footer layer to cover the contact rows or the rest of the page. */
   footer[data-framer-name="Phone"] > .nguyen-footer-links {
     display: none !important;
     pointer-events: none !important;
   }
-  footer[data-framer-name="Phone"] [data-nguyen-mobile-footer-nav="true"] {
+  footer[data-framer-name="Phone"] [data-framer-name="footer-links"] {
+    display: block !important;
+    position: relative !important;
+    z-index: 20 !important;
+    overflow: visible !important;
+    visibility: visible !important;
+    pointer-events: auto !important;
+  }
+  footer[data-framer-name="Phone"] .nguyen-mobile-footer-links {
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: stretch !important;
+    width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    gap: 0 !important;
+    position: relative !important;
+    z-index: 21 !important;
     pointer-events: auto !important;
     touch-action: manipulation !important;
   }
-  footer[data-framer-name="Phone"] [data-nguyen-mobile-footer-about="true"] {
-    display: none !important;
+  footer[data-framer-name="Phone"] .nguyen-mobile-footer-links > a {
+    display: flex !important;
+    align-items: center !important;
+    width: 100% !important;
+    min-height: 44px !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    color: rgba(79,71,66,.8) !important;
+    font: 500 14px/1.3 "Inter Display", Arial, sans-serif !important;
+    letter-spacing: -.4px !important;
+    text-transform: uppercase !important;
+    text-decoration: none !important;
+    background: transparent !important;
+    border: 0 !important;
+    position: relative !important;
+    z-index: 1 !important;
+    pointer-events: auto !important;
+    touch-action: manipulation !important;
+    cursor: pointer !important;
   }
 }
 @media (max-width: 1180px) {
@@ -1580,53 +1614,61 @@ footer > .nguyen-footer-links > :is(a, button):focus-visible { text-decoration: 
         node.style.getPropertyPriority('pointer-events') === 'important') node.style.removeProperty('pointer-events');
   }
 
-  function nativeMobileFooterKey(anchor) {
-    const text = compact(anchor?.textContent);
-    return ['home', 'about', 'services', 'projects', 'process', 'contact'].find((key) =>
-      text === key || text === key + key || text === key + key + key) || '';
+  function restoreMobileFooterPath(node, footer) {
+    for (let current = node; current && current !== footer; current = current.parentElement) {
+      restorePatchHiddenNode(current);
+      current.style.setProperty('pointer-events', 'auto', 'important');
+      current.style.setProperty('visibility', 'visible', 'important');
+    }
   }
 
   function enableNativeMobileFooter(footer) {
     if (!footer || footer.getAttribute('data-framer-name') !== 'Phone') return false;
 
-    // Remove the custom injected nav entirely on phones. Its absolute/high-z layer was
-    // overlapping the contact rows and could intercept taps outside the visible labels.
+    // Remove the old floating custom nav so it cannot cover any mobile content.
     footer.querySelectorAll(':scope > .nguyen-footer-links').forEach((nav) => nav.remove());
 
     const original = footer.querySelector('[data-framer-name="footer-links"]');
     if (!original) return false;
-    restorePatchHiddenNode(original);
+    restoreMobileFooterPath(original, footer);
 
-    original.querySelectorAll('a').forEach((anchor) => {
-      const key = nativeMobileFooterKey(anchor);
-      if (!key) return;
+    let nav = original.querySelector(':scope > .nguyen-mobile-footer-links');
+    if (!nav) {
+      nav = document.createElement('nav');
+      nav.className = 'nguyen-mobile-footer-links';
+      nav.setAttribute('aria-label', 'Footer navigation');
+      ['home', 'services', 'projects', 'process', 'contact'].forEach((key) => {
+        const link = document.createElement('a');
+        link.href = destinations[key];
+        link.textContent = key.toUpperCase();
+        link.setAttribute('data-nguyen-mobile-footer-nav', key);
+        link.setAttribute('data-nguyen-footer-href', destinations[key]);
+        nav.appendChild(link);
+      });
+      original.appendChild(nav);
+    }
 
-      // Restore only the native nav branch that our legacy-removal patch may have hidden.
-      for (let node = anchor; node && node !== footer; node = node.parentElement) {
-        restorePatchHiddenNode(node);
-        if (node === original) break;
-      }
-
-      if (key === 'about') {
-        const row = anchor.parentElement;
-        if (row && row.querySelectorAll('a').length === 1) {
-          row.setAttribute('data-nguyen-mobile-footer-about', 'true');
-        } else {
-          anchor.setAttribute('data-nguyen-mobile-footer-about', 'true');
-        }
-        return;
-      }
-
-      anchor.setAttribute('data-nguyen-mobile-footer-nav', 'true');
-      anchor.setAttribute('data-nguyen-footer-nav', key);
-      anchor.setAttribute('data-nguyen-footer-href', destinations[key]);
-      anchor.setAttribute('href', destinations[key]);
-      anchor.removeAttribute('target');
-      anchor.removeAttribute('rel');
-      anchor.style.setProperty('pointer-events', 'auto', 'important');
-      anchor.style.setProperty('touch-action', 'manipulation', 'important');
+    // Hide only Framer's old footer-link columns on the phone breakpoint. The replacement
+    // nav remains inside the same flow container so spacing below it stays natural.
+    Array.from(original.children).forEach((child) => {
+      if (child === nav) return;
+      child.style.setProperty('display', 'none', 'important');
+      child.style.setProperty('pointer-events', 'none', 'important');
+      child.setAttribute('aria-hidden', 'true');
     });
 
+    restoreMobileFooterPath(nav, footer);
+    nav.querySelectorAll('[data-nguyen-mobile-footer-nav]').forEach((link) => {
+      link.removeAttribute('inert');
+      link.removeAttribute('aria-hidden');
+      link.style.setProperty('pointer-events', 'auto', 'important');
+      link.style.setProperty('touch-action', 'manipulation', 'important');
+      const key = link.getAttribute('data-nguyen-mobile-footer-nav');
+      if (key && destinations[key]) {
+        link.setAttribute('href', destinations[key]);
+        link.setAttribute('data-nguyen-footer-href', destinations[key]);
+      }
+    });
     return true;
   }
 
@@ -1798,10 +1840,21 @@ footer > .nguyen-footer-links > :is(a, button):focus-visible { text-decoration: 
     window.location.assign(href);
   }
 
-  // Do not cancel pointerdown: cancelling it suppressed the native click and made users
-  // click repeatedly. Pointerup is not used by Framer's old click router, so it can route
-  // immediately on the first mouse/touch interaction while the anchor href remains a fallback.
+  // Route the phone footer on pointerup, before Framer's delegated click handlers can
+  // consume the tap. The anchors also keep real hrefs as a keyboard/browser fallback.
   window.addEventListener('pointerup', (event) => {
+    const start = event.target?.nodeType === Node.TEXT_NODE ? event.target.parentElement : event.target;
+    const mobileLink = window.innerWidth <= 809
+      ? start?.closest?.('.nguyen-mobile-footer-links [data-nguyen-mobile-footer-nav]')
+      : null;
+    if (mobileLink) {
+      event.preventDefault();
+      event.stopPropagation();
+      if (event.stopImmediatePropagation) event.stopImmediatePropagation();
+      window.location.assign(mobileLink.getAttribute('data-nguyen-footer-href') || mobileLink.href);
+      return;
+    }
+
     const link = footerLinkFromEvent(event);
     if (!link) return;
     event.preventDefault();
@@ -1813,7 +1866,7 @@ footer > .nguyen-footer-links > :is(a, button):focus-visible { text-decoration: 
   document.addEventListener('click', (event) => {
     const eventTarget = event.target?.nodeType === Node.TEXT_NODE ? event.target.parentElement : event.target;
     const nativeMobileLink = window.innerWidth <= 809
-      ? eventTarget?.closest?.('[data-nguyen-mobile-footer-nav="true"]')
+      ? eventTarget?.closest?.('.nguyen-mobile-footer-links [data-nguyen-mobile-footer-nav]')
       : null;
     if (nativeMobileLink) {
       event.preventDefault();
