@@ -1442,6 +1442,21 @@ footer > .nguyen-footer-links > :is(a, button):focus-visible { text-decoration: 
 @media (min-width: 1181px) {
   footer [data-nguyen-footer-heading="true"] { max-width: calc(100% - 360px) !important; }
 }
+@media (max-width: 809px) {
+  /* Phone only: use Framer's native footer menu in its original flow. The injected
+     direct-child nav must not exist as a floating/high-z hit layer on mobile. */
+  footer[data-framer-name="Phone"] > .nguyen-footer-links {
+    display: none !important;
+    pointer-events: none !important;
+  }
+  footer[data-framer-name="Phone"] [data-nguyen-mobile-footer-nav="true"] {
+    pointer-events: auto !important;
+    touch-action: manipulation !important;
+  }
+  footer[data-framer-name="Phone"] [data-nguyen-mobile-footer-about="true"] {
+    display: none !important;
+  }
+}
 @media (max-width: 1180px) {
   footer > .nguyen-footer-links.nguyen-footer-links--compact-flow,
   footer > .nguyen-footer-links.nguyen-footer-links--mobile-flow {
@@ -1552,6 +1567,69 @@ footer > .nguyen-footer-links > :is(a, button):focus-visible { text-decoration: 
     });
   }
 
+  function restorePatchHiddenNode(node) {
+    if (!node) return;
+    if (node.getAttribute('data-nguyen-legacy-nav') === 'true') node.removeAttribute('data-nguyen-legacy-nav');
+    if (node.getAttribute('aria-hidden') === 'true') node.removeAttribute('aria-hidden');
+    if (node.hasAttribute('inert')) node.removeAttribute('inert');
+    if (node.style.getPropertyValue('display') === 'none' &&
+        node.style.getPropertyPriority('display') === 'important') node.style.removeProperty('display');
+    if (node.style.getPropertyValue('visibility') === 'hidden' &&
+        node.style.getPropertyPriority('visibility') === 'important') node.style.removeProperty('visibility');
+    if (node.style.getPropertyValue('pointer-events') === 'none' &&
+        node.style.getPropertyPriority('pointer-events') === 'important') node.style.removeProperty('pointer-events');
+  }
+
+  function nativeMobileFooterKey(anchor) {
+    const text = compact(anchor?.textContent);
+    return ['home', 'about', 'services', 'projects', 'process', 'contact'].find((key) =>
+      text === key || text === key + key || text === key + key + key) || '';
+  }
+
+  function enableNativeMobileFooter(footer) {
+    if (!footer || footer.getAttribute('data-framer-name') !== 'Phone') return false;
+
+    // Remove the custom injected nav entirely on phones. Its absolute/high-z layer was
+    // overlapping the contact rows and could intercept taps outside the visible labels.
+    footer.querySelectorAll(':scope > .nguyen-footer-links').forEach((nav) => nav.remove());
+
+    const original = footer.querySelector('[data-framer-name="footer-links"]');
+    if (!original) return false;
+    restorePatchHiddenNode(original);
+
+    original.querySelectorAll('a').forEach((anchor) => {
+      const key = nativeMobileFooterKey(anchor);
+      if (!key) return;
+
+      // Restore only the native nav branch that our legacy-removal patch may have hidden.
+      for (let node = anchor; node && node !== footer; node = node.parentElement) {
+        restorePatchHiddenNode(node);
+        if (node === original) break;
+      }
+
+      if (key === 'about') {
+        const row = anchor.parentElement;
+        if (row && row.querySelectorAll('a').length === 1) {
+          row.setAttribute('data-nguyen-mobile-footer-about', 'true');
+        } else {
+          anchor.setAttribute('data-nguyen-mobile-footer-about', 'true');
+        }
+        return;
+      }
+
+      anchor.setAttribute('data-nguyen-mobile-footer-nav', 'true');
+      anchor.setAttribute('data-nguyen-footer-nav', key);
+      anchor.setAttribute('data-nguyen-footer-href', destinations[key]);
+      anchor.setAttribute('href', destinations[key]);
+      anchor.removeAttribute('target');
+      anchor.removeAttribute('rel');
+      anchor.style.setProperty('pointer-events', 'auto', 'important');
+      anchor.style.setProperty('touch-action', 'manipulation', 'important');
+    });
+
+    return true;
+  }
+
   function hideLegacyNavGroups(footer) {
     const matches = [];
     footer.querySelectorAll('*').forEach((el) => {
@@ -1605,11 +1683,22 @@ footer > .nguyen-footer-links > :is(a, button):focus-visible { text-decoration: 
   }
 
   function patchFooterNav() {
-    document.querySelectorAll('footer').forEach(hideLegacyNavGroups);
+    const phoneMode = window.innerWidth <= 809;
+    document.querySelectorAll('footer').forEach((footer) => {
+      if (phoneMode && footer.getAttribute('data-framer-name') === 'Phone') {
+        enableNativeMobileFooter(footer);
+        return;
+      }
+      hideLegacyNavGroups(footer);
+    });
     // Framer ships one footer copy per breakpoint; only the desktop copy typically carries
     // data-framer-name="footer-links". Iterate all footers so the mobile copy also gets a nav.
     document.querySelectorAll('footer').forEach((footer) => {
       if (getComputedStyle(footer).display === 'none') return;
+      if (phoneMode && footer.getAttribute('data-framer-name') === 'Phone') {
+        enableNativeMobileFooter(footer);
+        return;
+      }
       const original = footer.querySelector('[data-framer-name="footer-links"]');
       // Keep this broad wrapper active because it also owns the social and legal columns.
       if (getComputedStyle(footer).position === 'static') footer.style.position = 'relative';
@@ -1722,6 +1811,18 @@ footer > .nguyen-footer-links > :is(a, button):focus-visible { text-decoration: 
   }, true);
 
   document.addEventListener('click', (event) => {
+    const eventTarget = event.target?.nodeType === Node.TEXT_NODE ? event.target.parentElement : event.target;
+    const nativeMobileLink = window.innerWidth <= 809
+      ? eventTarget?.closest?.('[data-nguyen-mobile-footer-nav="true"]')
+      : null;
+    if (nativeMobileLink) {
+      event.preventDefault();
+      event.stopPropagation();
+      if (event.stopImmediatePropagation) event.stopImmediatePropagation();
+      window.location.assign(nativeMobileLink.getAttribute('data-nguyen-footer-href') || nativeMobileLink.href);
+      return;
+    }
+
     const link = footerLinkFromEvent(event);
     if (link) {
       // Keyboard activation and browsers without Pointer Events use the same one-step route.
