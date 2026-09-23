@@ -38,12 +38,12 @@ test('footer nav observer is debounced and disconnects so mobile scroll cannot t
   assert.match(patch, /setTimeout\(\(\) => observer\.disconnect\(\), 60000\)/);
   assert.doesNotMatch(patch, /new MutationObserver\(patchFooterNav\)/);
 });
-test('breakpoint copies of the old nav are hidden by label, not only by Framer name', () => {
-  // Not every footer copy carries data-framer-name="footer-links", so the stylesheet alone left one
-  // showing through underneath the injected nav.
+test('desktop and tablet legacy footer copies are still hidden while phone uses the native menu', () => {
   assert.match(patch, /function hideLegacyNavGroups/);
   assert.match(patch, /LEGACY_NAV_LABELS/);
-  assert.match(patch, /document\.querySelectorAll\('footer'\)\.forEach\(hideLegacyNavGroups\)/);
+  assert.match(patch, /phoneMode && footer\.getAttribute\('data-framer-name'\) === 'Phone'/);
+  assert.match(patch, /enableNativeMobileFooter\(footer\)/);
+  assert.match(patch, /hideLegacyNavGroups\(footer\)/);
 });
 test('the old six-link footer group is removed from layout and cannot leave click targets behind', () => {
   // The old HOME / ABOUT / SERVICES / PROJECTS / PROCESS / CONTACT group is not a fallback:
@@ -86,16 +86,26 @@ test('footer navigation uses one first-click route without cancelling pointerdow
   assert.doesNotMatch(patch, /window\.addEventListener\('pointerdown'/);
 });
 
-test('mobile footer navigation stays outside Framer wrappers and positions from get-in-touch', () => {
-  assert.match(patch, /nguyen-footer-links--mobile-flow/);
-  assert.match(patch, /if \(nav\.parentElement !== footer\) footer\.appendChild\(nav\)/);
-  assert.match(patch, /reference\.bottom - bounds\.top \+ 24/);
-  assert.doesNotMatch(patch, /host\.insertBefore\(nav, getInTouch\.nextSibling\)/);
-  assert.doesNotMatch(patch, /position: static !important/);
+test('phone footer removes the injected overlay and creates an in-flow controlled nav', () => {
+  assert.match(patch, /function enableNativeMobileFooter/);
+  assert.match(patch, /footer\.querySelectorAll\(':scope > \.nguyen-footer-links'\)\.forEach\(\(nav\) => nav\.remove\(\)\)/);
+  assert.match(patch, /footer\.querySelector\('\[data-framer-name="footer-links"\]'\)/);
+  assert.match(patch, /createElement\('nav'\)/);
+  assert.match(patch, /nguyen-mobile-footer-links/);
+  assert.match(patch, /\['home', 'services', 'projects', 'process', 'contact'\]/);
+  assert.doesNotMatch(patch, /data-nguyen-mobile-footer-about/);
 });
-test('mobile footer navigation selects only a visible get-in-touch label', () => {
-  assert.match(patch, /getClientRects\(\)\.length === 0/);
-  assert.match(patch, /for \(let current = el; current && current !== footer; current = current\.parentElement\)/);
+test('phone footer links route on first pointerup without a floating hit layer', () => {
+  assert.match(patch, /window\.addEventListener\('pointerup'/);
+  assert.match(patch, /nguyen-mobile-footer-links \[data-nguyen-mobile-footer-nav\]/);
+  assert.match(patch, /window\.location\.assign\(mobileLink\.getAttribute\('data-nguyen-footer-href'\)/);
+  assert.match(patch, /footer\[data-framer-name="Phone"\] > \.nguyen-footer-links[\s\S]*display: none !important/);
+  assert.match(patch, /footer\[data-framer-name="Phone"\] \.nguyen-mobile-footer-links[\s\S]*position: relative !important/);
+});
+test('phone footer restores pointer events through the nav ancestor path', () => {
+  assert.match(patch, /function restoreMobileFooterPath/);
+  assert.match(patch, /current\.style\.setProperty\('pointer-events', 'auto', 'important'\)/);
+  assert.match(patch, /restoreMobileFooterPath\(nav, footer\)/);
 });
 test('tablet footer navigation stays a direct footer child and uses the visible get-in-touch anchor', () => {
   assert.match(patch, /nguyen-footer-links--compact-flow/);
