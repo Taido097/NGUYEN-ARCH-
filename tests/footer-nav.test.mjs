@@ -113,6 +113,15 @@ test('tablet footer navigation stays a direct footer child and uses the visible 
   assert.match(patch, /@media \(max-width: 1180px\)/);
   assert.doesNotMatch(patch, /compactHost\.insertBefore/);
 });
+test('mobile project-panel blocker cannot disable homepage links', () => {
+  const blocker = source.split('const NON_LINKING_PROJECT_PANEL_PATCH = `')[1].split('const FOOTER_FIRST_PAINT_STYLE')[0];
+  assert.match(blocker, /@media \(max-width: 809px\)/);
+  assert.match(blocker, /pointer-events: auto !important/);
+  assert.match(blocker, /function clearMobilePanelBlockers/);
+  assert.match(blocker, /window\.innerWidth > 809/);
+  assert.match(blocker, /removeAttribute\('data-nguyen-non-linking-project-panel'\)/);
+  assert.match(blocker, /if \(window\.innerWidth <= 809\) return;/);
+});
 test('header navigation styling never targets footer links after scrolling', () => {
   const main = source.split('const MAIN_NAV_PATCH')[1].split('const ENGINEERING_SERVICE_PATCH')[0];
   assert.match(main, /anchor\.closest\('footer'\)/);
