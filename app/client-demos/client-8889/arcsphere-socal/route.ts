@@ -1956,6 +1956,87 @@ footer > .nguyen-footer-links > :is(a, button):focus-visible { text-decoration: 
 })();
 <\/script>`
 
+const SOCIAL_MEDIA_PATCH = `
+<style id="nguyen-socal-social-media-style">
+[data-framer-name="Social Media"] [data-framer-name="PinterestLogo"],
+[data-framer-name="Social Media"] [data-framer-name="Behance"] {
+  display: none !important;
+  visibility: hidden !important;
+  pointer-events: none !important;
+}
+[data-framer-name="Social Media"] [data-nguyen-facebook-icon="true"] {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  visibility: visible !important;
+  pointer-events: auto !important;
+}
+[data-framer-name="Social Media"] [data-nguyen-facebook-icon="true"] > svg {
+  display: block !important;
+  width: 100% !important;
+  height: 100% !important;
+}
+</style>
+<script id="nguyen-socal-social-media-patch">
+(() => {
+  const INSTAGRAM = 'https://www.instagram.com/nguyen_architecture/';
+  const FACEBOOK = 'https://www.facebook.com/p/Nguyen-Architecture-100067629215747/';
+
+  function patchSocialMedia() {
+    document.querySelectorAll('[data-framer-name="Social Media"] [data-framer-name="Logo Icon"]').forEach((group) => {
+      const instagram = group.querySelector('a[data-framer-name="InstagramLogo"]');
+      if (instagram) {
+        instagram.setAttribute('href', INSTAGRAM);
+        instagram.setAttribute('target', '_blank');
+        instagram.setAttribute('rel', 'noopener noreferrer');
+        instagram.setAttribute('aria-label', 'NGUYEN Architecture on Instagram');
+      }
+
+      const linkedin = group.querySelector('a[data-framer-name="LinkedinLogo"], a[data-nguyen-facebook-icon="true"]');
+      if (linkedin) {
+        linkedin.setAttribute('data-framer-name', 'FacebookLogo');
+        linkedin.setAttribute('data-nguyen-facebook-icon', 'true');
+        linkedin.setAttribute('href', FACEBOOK);
+        linkedin.setAttribute('target', '_blank');
+        linkedin.setAttribute('rel', 'noopener noreferrer');
+        linkedin.setAttribute('aria-label', 'NGUYEN Architecture on Facebook');
+        if (linkedin.getAttribute('data-nguyen-facebook-rendered') !== 'true') {
+          linkedin.setAttribute('data-nguyen-facebook-rendered', 'true');
+          linkedin.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="currentColor" d="M24 12.073C24 5.405 18.627 0 12 0S0 5.405 0 12.073C0 18.1 4.388 23.094 10.125 24v-8.438H7.078v-3.49h3.047V9.414c0-3.024 1.792-4.695 4.533-4.695 1.313 0 2.686.235 2.686.235v2.973h-1.513c-1.49 0-1.956.931-1.956 1.887v2.267h3.328l-.532 3.49h-2.796V24C19.612 23.094 24 18.1 24 12.073z"/></svg>';
+        }
+      }
+
+      group.querySelectorAll('a[data-framer-name="PinterestLogo"], a[data-framer-name="Behance"]').forEach((link) => {
+        link.removeAttribute('href');
+        link.removeAttribute('target');
+        link.removeAttribute('rel');
+        link.setAttribute('aria-hidden', 'true');
+        link.setAttribute('tabindex', '-1');
+        link.style.setProperty('display', 'none', 'important');
+        link.style.setProperty('pointer-events', 'none', 'important');
+      });
+    });
+  }
+
+  patchSocialMedia();
+  window.addEventListener('load', patchSocialMedia, { once: true });
+  [250, 750, 1500, 3000, 6000].forEach((delay) => setTimeout(patchSocialMedia, delay));
+
+  let socialTimer;
+  const observer = new MutationObserver(() => {
+    clearTimeout(socialTimer);
+    socialTimer = setTimeout(patchSocialMedia, 100);
+  });
+  if (document.body) observer.observe(document.body, {
+    childList: true,
+    subtree: true,
+    attributes: true,
+    attributeFilter: ['href', 'data-framer-name'],
+  });
+  setTimeout(() => observer.disconnect(), 12000);
+})();
+</script>`
+
 const ICON_BAR_PATCH = `
 <style id="nguyen-socal-mobile-contact-layout">
 [data-nguyen-mobile-contact-label] { display: none; }
@@ -3136,7 +3217,7 @@ const FRAMER_FORM_INQUIRY_CAPTURE_PATCH = `
   html = html.replace(/hello@(?:arcsphere|nguyen)studio\.ae/gi, 'info@nguyenarchitecture.com')
   html = html.replace('<head>', `<head>${FRAMER_FORM_INQUIRY_CAPTURE_PATCH}`)
   html = html.replace('</head>', `${DOCUMENT_TITLE_LOCK_PATCH}${FOOTER_FIRST_PAINT_STYLE}</head>`)
-  html = html.replace('</body>', `${SPLIT_TEXT_PATCH}${BRAND_PATCH}${SQUARE_IMAGES_PATCH}${SERVICES_ANCHOR_PATCH}${MAIN_NAV_PATCH}${ENGINEERING_SERVICE_PATCH}${PROJECT_CARDS_PATCH}${DESIGN_PANELS_PATCH}${RESIDENTIAL_ROW_IMAGE_PATCH}${BLUEPRINT_IMAGE_PATCH}${PROCESS_TILE_IMAGE_PATCH}${CARD_ROUTING_PATCH}${EXTRA_CARD_CLEANUP_PATCH}${SERVICE_DROPDOWN_PATCH}${PROJECT_TYPE_SECTION_PATCH}${NON_LINKING_PROJECT_PANEL_PATCH}${MOBILE_SECTION_TAP_PATCH}${FOOTER_PATCH}${FOOTER_NAV_PATCH}${ICON_BAR_PATCH}${TESTIMONIAL_PATCH}${HOMEPAGE_MOBILE_HERO_CROP}${HOMEPAGE_HERO_LOCK_PATCH}${HOMEPAGE_SIDE_HERO_LOCK_PATCH}${FRAMER_FORM_INTERCEPT_PATCH}${HERO_CTA_PATCH}${HOMEPAGE_INTRO_IMAGE_SWAP_PATCH}${PAGE_VISIBILITY_GUARD_PATCH}</body>`)
+  html = html.replace('</body>', `${SPLIT_TEXT_PATCH}${BRAND_PATCH}${SQUARE_IMAGES_PATCH}${SERVICES_ANCHOR_PATCH}${MAIN_NAV_PATCH}${ENGINEERING_SERVICE_PATCH}${PROJECT_CARDS_PATCH}${DESIGN_PANELS_PATCH}${RESIDENTIAL_ROW_IMAGE_PATCH}${BLUEPRINT_IMAGE_PATCH}${PROCESS_TILE_IMAGE_PATCH}${CARD_ROUTING_PATCH}${EXTRA_CARD_CLEANUP_PATCH}${SERVICE_DROPDOWN_PATCH}${PROJECT_TYPE_SECTION_PATCH}${NON_LINKING_PROJECT_PANEL_PATCH}${MOBILE_SECTION_TAP_PATCH}${FOOTER_PATCH}${FOOTER_NAV_PATCH}${SOCIAL_MEDIA_PATCH}${ICON_BAR_PATCH}${TESTIMONIAL_PATCH}${HOMEPAGE_MOBILE_HERO_CROP}${HOMEPAGE_HERO_LOCK_PATCH}${HOMEPAGE_SIDE_HERO_LOCK_PATCH}${FRAMER_FORM_INTERCEPT_PATCH}${HERO_CTA_PATCH}${HOMEPAGE_INTRO_IMAGE_SWAP_PATCH}${PAGE_VISIBILITY_GUARD_PATCH}</body>`)
 
   const headers = new Headers(response.headers)
   headers.set('Content-Type', 'text/html; charset=utf-8')
