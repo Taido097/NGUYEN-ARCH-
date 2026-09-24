@@ -1964,17 +1964,25 @@ const SOCIAL_MEDIA_PATCH = `
   visibility: hidden !important;
   pointer-events: none !important;
 }
+[data-framer-name="Social Media"] a[data-framer-name="InstagramLogo"],
+[data-framer-name="Social Media"] [data-nguyen-facebook-icon="true"] {
+  color: rgb(79, 71, 66) !important;
+  visibility: visible !important;
+  pointer-events: auto !important;
+  touch-action: manipulation !important;
+  cursor: pointer !important;
+}
 [data-framer-name="Social Media"] [data-nguyen-facebook-icon="true"] {
   display: inline-flex !important;
   align-items: center !important;
   justify-content: center !important;
-  visibility: visible !important;
-  pointer-events: auto !important;
 }
 [data-framer-name="Social Media"] [data-nguyen-facebook-icon="true"] > svg {
   display: block !important;
   width: 100% !important;
   height: 100% !important;
+  color: rgb(79, 71, 66) !important;
+  fill: rgb(79, 71, 66) !important;
 }
 </style>
 <script id="nguyen-socal-social-media-patch">
@@ -1990,6 +1998,9 @@ const SOCIAL_MEDIA_PATCH = `
         instagram.setAttribute('target', '_blank');
         instagram.setAttribute('rel', 'noopener noreferrer');
         instagram.setAttribute('aria-label', 'NGUYEN Architecture on Instagram');
+        instagram.setAttribute('data-nguyen-social-url', INSTAGRAM);
+        instagram.style.setProperty('pointer-events', 'auto', 'important');
+        instagram.style.setProperty('touch-action', 'manipulation', 'important');
       }
 
       const linkedin = group.querySelector('a[data-framer-name="LinkedinLogo"], a[data-nguyen-facebook-icon="true"]');
@@ -2000,6 +2011,10 @@ const SOCIAL_MEDIA_PATCH = `
         linkedin.setAttribute('target', '_blank');
         linkedin.setAttribute('rel', 'noopener noreferrer');
         linkedin.setAttribute('aria-label', 'NGUYEN Architecture on Facebook');
+        linkedin.setAttribute('data-nguyen-social-url', FACEBOOK);
+        linkedin.style.setProperty('color', 'rgb(79, 71, 66)', 'important');
+        linkedin.style.setProperty('pointer-events', 'auto', 'important');
+        linkedin.style.setProperty('touch-action', 'manipulation', 'important');
         if (linkedin.getAttribute('data-nguyen-facebook-rendered') !== 'true') {
           linkedin.setAttribute('data-nguyen-facebook-rendered', 'true');
           linkedin.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="currentColor" d="M24 12.073C24 5.405 18.627 0 12 0S0 5.405 0 12.073C0 18.1 4.388 23.094 10.125 24v-8.438H7.078v-3.49h3.047V9.414c0-3.024 1.792-4.695 4.533-4.695 1.313 0 2.686.235 2.686.235v2.973h-1.513c-1.49 0-1.956.931-1.956 1.887v2.267h3.328l-.532 3.49h-2.796V24C19.612 23.094 24 18.1 24 12.073z"/></svg>';
@@ -2017,6 +2032,32 @@ const SOCIAL_MEDIA_PATCH = `
       });
     });
   }
+
+  let socialOpenedAt = 0;
+  function socialLinkFromEvent(event) {
+    const target = event.target?.nodeType === Node.TEXT_NODE ? event.target.parentElement : event.target;
+    return target?.closest?.('[data-framer-name="Social Media"] [data-nguyen-social-url]') || null;
+  }
+  function openSocial(event) {
+    const link = socialLinkFromEvent(event);
+    if (!link) return;
+    if (event.type === 'click' && Date.now() - socialOpenedAt < 800) {
+      event.preventDefault();
+      event.stopPropagation();
+      if (event.stopImmediatePropagation) event.stopImmediatePropagation();
+      return;
+    }
+    const url = link.getAttribute('data-nguyen-social-url');
+    if (!url) return;
+    event.preventDefault();
+    event.stopPropagation();
+    if (event.stopImmediatePropagation) event.stopImmediatePropagation();
+    socialOpenedAt = Date.now();
+    window.open(url, '_blank', 'noopener,noreferrer');
+  }
+
+  window.addEventListener('pointerup', openSocial, true);
+  window.addEventListener('click', openSocial, true);
 
   patchSocialMedia();
   window.addEventListener('load', patchSocialMedia, { once: true });
