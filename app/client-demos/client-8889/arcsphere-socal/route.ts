@@ -12,13 +12,22 @@ const DOCUMENT_TITLE_LOCK_PATCH = `
 <script id="nguyen-document-title-lock">
 (() => {
   const title = '${DOCUMENT_TITLE}';
-  function apply() {
-    if (document.title !== title) document.title = title;
+  const apply = () => {
+    document.title = title;
     const node = document.querySelector('title');
-    if (node && node.textContent !== title) node.textContent = title;
-  }
+    if (node) node.textContent = title;
+  };
+
+  // Framer can restore its original document title during hydration. Keep this
+  // tiny title-only guard independent from the performance observer wrapper.
   apply();
-  window.__nguyenCreateObserver(apply).observe(document.head, { childList: true, subtree: true, characterData: true });
+  const observer = new MutationObserver(apply);
+  observer.observe(document.head, { childList: true, subtree: true, characterData: true });
+
+  [50, 250, 750, 1500, 3000, 6000, 10000].forEach((delay) => {
+    window.setTimeout(apply, delay);
+  });
+  window.setTimeout(() => observer.disconnect(), 15000);
 })();
 </script>`
 
