@@ -2,6 +2,40 @@ const SOURCE_URL = 'https://arcsphere-studio.framer.website/';
 
 export const revalidate = 3600;
 
+const NGUYEN_PERFORMANCE_PATCH = `
+<script id="nguyen-performance-runtime">
+(() => {
+  if (window.__nguyenCreateObserver) return;
+  const NativeObserver = window.MutationObserver;
+  const MAX_LIFETIME = 15000;
+  window.__nguyenCreateObserver = (callback) => {
+    let frame = 0;
+    let pending = [];
+    let timer = null;
+    const wrapped = (mutations, observer) => {
+      pending.push(...mutations);
+      if (frame) return;
+      frame = window.requestAnimationFrame(() => {
+        frame = 0;
+        const batch = pending;
+        pending = [];
+        callback(batch, observer);
+      });
+    };
+    const observer = new NativeObserver(wrapped);
+    timer = window.setTimeout(() => observer.disconnect(), MAX_LIFETIME);
+    const disconnect = observer.disconnect.bind(observer);
+    observer.disconnect = () => {
+      if (timer) window.clearTimeout(timer);
+      if (frame) window.cancelAnimationFrame(frame);
+      pending = [];
+      disconnect();
+    };
+    return observer;
+  };
+})();
+</script>`;
+
 const CLEANUP = `
 <style id="designedbytd-client-demo-cleanup">
   #__framer-badge-container,
@@ -447,7 +481,7 @@ const CLIENT_PATCH = `
   installServiceLinkInterceptor();
   patchRoot(document.body);
   window.addEventListener('load', () => { patchThirdProjectImage(document.body); patchServicesSection(document.body); }, { once: true });
-  const observer = new MutationObserver((mutations) => { for (const mutation of mutations) { if (mutation.type === 'characterData') { patchTextNode(mutation.target); const paragraph = mutation.target.parentElement?.closest('p'); if (paragraph) patchSplitParagraph(paragraph); const parent = mutation.target.parentElement; if (parent) { patchCounters(parent); patchOfficeCard(parent); patchCustomHomeCard(parent); patchThirdProjectImage(parent); patchServicesSection(parent); keepResidentialLabelOnOneLine(parent); } continue; } if (mutation.type === 'childList') mutation.addedNodes.forEach(patchRoot); } });
+  const observer = window.__nguyenCreateObserver((mutations) => { for (const mutation of mutations) { if (mutation.type === 'characterData') { patchTextNode(mutation.target); const paragraph = mutation.target.parentElement?.closest('p'); if (paragraph) patchSplitParagraph(paragraph); const parent = mutation.target.parentElement; if (parent) { patchCounters(parent); patchOfficeCard(parent); patchCustomHomeCard(parent); patchThirdProjectImage(parent); patchServicesSection(parent); keepResidentialLabelOnOneLine(parent); } continue; } if (mutation.type === 'childList') mutation.addedNodes.forEach(patchRoot); } });
   observer.observe(document.body, { childList: true, subtree: true, characterData: true });
   // Framer renders this page from its own external bundles, so none of the rewriting above can
   // take effect until that render lands. Disconnecting the observer at 6s meant any content
@@ -529,7 +563,7 @@ async function getSource() {
 export async function GET() {
   try {
     let html = await getSource(); html = removeNonVisualTelemetry(html); html = optimizeImageDecoding(html);
-    html = html.replace(/<head([^>]*)>/i, `<head$1><base href="${SOURCE_URL}"><meta name="robots" content="noindex,nofollow,noarchive"><meta name="description" content="NGUYEN ARCHITECTURE & ENGINEERING — commercial architecture, engineering, tenant improvement and building permit support in Orange County.">${CLEANUP}`);
+    html = html.replace(/<head([^>]*)>/i, `<head$1><base href="${SOURCE_URL}"><meta name="robots" content="noindex,nofollow,noarchive"><meta name="description" content="NGUYEN ARCHITECTURE & ENGINEERING — commercial architecture, engineering, tenant improvement and building permit support in Orange County.">${CLEANUP}${NGUYEN_PERFORMANCE_PATCH}<link rel="preload" as="image" href="/client-8889/homepage-hero-courtyard-morning.webp" fetchpriority="high">`);
     html = html.replace(/<title>[^<]*<\/title>/i, '<title>NGUYEN ARCHITECTURE & ENGINEERING — Website Demo</title>');
 
     // Apply the server-side rebranding for every device. Both desktop and phones now get the same
