@@ -1,6 +1,9 @@
 import { GET as getConcept } from "../arcsphere-fixed/route"
 import { TESTIMONIAL_PATCH } from "./testimonial-patch"
 
+export const revalidate = 3600
+export const dynamic = "force-static"
+
 const OLD_COPY = 'Based in Orange County, we provide commercial architecture, engineering and permit support from existing-condition survey and business layout through plan check and approval.'
 const NEW_COPY = 'Based in Southern California, we provide residential and commercial architecture, engineering, and permit support from concept through approval.'
 const DOCUMENT_TITLE = 'NGUYEN ARCHITECTURE & ENGINEERING'
@@ -15,7 +18,7 @@ const DOCUMENT_TITLE_LOCK_PATCH = `
     if (node && node.textContent !== title) node.textContent = title;
   }
   apply();
-  new MutationObserver(apply).observe(document.head, { childList: true, subtree: true, characterData: true });
+  window.__nguyenCreateObserver(apply).observe(document.head, { childList: true, subtree: true, characterData: true });
 })();
 </script>`
 
@@ -75,7 +78,7 @@ const HOMEPAGE_HERO_LOCK_PATCH = `
   window.addEventListener('resize', patchHero, { passive: true });
   [100, 300, 750, 1500, 3000, 6000, 12000].forEach((delay) => setTimeout(patchHero, delay));
 
-  const observer = new MutationObserver(patchHero);
+  const observer = window.__nguyenCreateObserver(patchHero);
   if (document.body) observer.observe(document.body, {
     childList: true,
     subtree: true,
@@ -122,7 +125,7 @@ const HOMEPAGE_SIDE_HERO_LOCK_PATCH = `
   window.addEventListener('resize', patchSides, { passive: true });
   [100, 300, 750, 1500, 3000, 6000, 12000].forEach((delay) => setTimeout(patchSides, delay));
 
-  const observer = new MutationObserver(patchSides);
+  const observer = window.__nguyenCreateObserver(patchSides);
   if (document.body) observer.observe(document.body, {
     childList: true,
     subtree: true,
@@ -189,7 +192,7 @@ const SPLIT_TEXT_PATCH = `
   patchRoot(document.body);
   window.addEventListener('load', () => patchRoot(document.body), { once: true });
 
-  const observer = new MutationObserver((mutations) => {
+  const observer = window.__nguyenCreateObserver((mutations) => {
     for (const mutation of mutations) {
       if (mutation.type === 'characterData') {
         patchParagraph(mutation.target.parentElement?.closest('p'));
@@ -240,7 +243,7 @@ const BRAND_PATCH = `
   [250, 750, 1500, 3000, 6000, 10000, 20000, 40000, 60000].forEach((delay) => setTimeout(patchBrand, delay));
 
   // MutationObserver so React reconciliation reverts are caught and re-patched immediately.
-  const brandObs = new MutationObserver((mutations) => {
+  const brandObs = window.__nguyenCreateObserver((mutations) => {
     for (const m of mutations) {
       if (m.type === 'characterData') {
         const t = normalize(m.target.nodeValue);
@@ -466,7 +469,7 @@ const MAIN_NAV_PATCH = `
 
   let navTimer;
   const scheduleNav = () => { clearTimeout(navTimer); navTimer = setTimeout(patchNav, 150); };
-  const observer = new MutationObserver(scheduleNav);
+  const observer = window.__nguyenCreateObserver(scheduleNav);
   observer.observe(document.body, { childList: true, subtree: true, characterData: true });
   setTimeout(() => { patchNav(); observer.disconnect(); }, 8000);
 })();
@@ -718,7 +721,7 @@ const ENGINEERING_SERVICE_PATCH = `
   // crash the tab. Coalesce bursts into one delayed run; the timed passes above still cover hydration.
   let engTimer;
   const scheduleEngineering = () => { clearTimeout(engTimer); engTimer = setTimeout(patchEngineering, 150); };
-  const observer = new MutationObserver(scheduleEngineering);
+  const observer = window.__nguyenCreateObserver(scheduleEngineering);
   observer.observe(document.body, { childList: true, subtree: true, characterData: true });
   setTimeout(() => observer.disconnect(), 61000);
 })();
@@ -863,7 +866,7 @@ const PROJECT_CARDS_PATCH = `
   // scroll does not force a reflow on each batch. The timed passes above still cover late renders.
   let cardsTimer;
   const scheduleCards = () => { clearTimeout(cardsTimer); cardsTimer = setTimeout(patchCards, 150); };
-  const obs = new MutationObserver(scheduleCards);
+  const obs = window.__nguyenCreateObserver(scheduleCards);
   if (document.body) obs.observe(document.body, { childList: true, subtree: true });
   setTimeout(() => obs.disconnect(), 8000);
 })();
@@ -963,7 +966,7 @@ const DESIGN_PANELS_PATCH = `
   // MutationObserver catches React/Framer state-driven renders of hover content
   let panelTimer;
   const schedulePanels = () => { clearTimeout(panelTimer); panelTimer = setTimeout(patchPanelLinks, 150); };
-  const obs = new MutationObserver((mutations) => {
+  const obs = window.__nguyenCreateObserver((mutations) => {
     for (const m of mutations) {
       if (m.type === 'characterData') {
         fixCounts(m.target);
@@ -1056,7 +1059,7 @@ const RESIDENTIAL_ROW_IMAGE_PATCH = `
   [300, 800, 1800, 3500, 6000].forEach(function(t) { setTimeout(patch, t); });
 
   var timer;
-  var obs = new MutationObserver(function() { clearTimeout(timer); timer = setTimeout(patch, 150); });
+  var obs = window.__nguyenCreateObserver(function() { clearTimeout(timer); timer = setTimeout(patch, 150); });
   if (document.body) obs.observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ['src', 'srcset'] });
   setTimeout(function() { obs.disconnect(); }, 12000);
 })();
@@ -1113,7 +1116,7 @@ const BLUEPRINT_IMAGE_PATCH = `
   // Debounced observer — fires on src/srcset changes from Framer lazy-loading but throttled to
   // avoid hammering querySelectorAll on every individual image load.
   let bpTimer;
-  const obs = new MutationObserver(() => { clearTimeout(bpTimer); bpTimer = setTimeout(patchBlueprints, 150); });
+  const obs = window.__nguyenCreateObserver(() => { clearTimeout(bpTimer); bpTimer = setTimeout(patchBlueprints, 150); });
   if (document.body) obs.observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ['src', 'srcset'] });
   setTimeout(() => obs.disconnect(), 12000);
 })();
@@ -1170,7 +1173,7 @@ const SERVICE_DROPDOWN_PATCH = `
   [300, 800, 1500, 3000, 6000].forEach((delay) => setTimeout(patchServiceDropdown, delay));
 
   let serviceTimer;
-  const observer = new MutationObserver(() => {
+  const observer = window.__nguyenCreateObserver(() => {
     clearTimeout(serviceTimer);
     serviceTimer = setTimeout(patchServiceDropdown, 150);
   });
@@ -1426,7 +1429,7 @@ const FOOTER_PATCH = `
     clearTimeout(footerTimer);
     footerTimer = setTimeout(patchFooter, 150);
   };
-  const observer = new MutationObserver(scheduleFooter);
+  const observer = window.__nguyenCreateObserver(scheduleFooter);
   if (document.body) observer.observe(document.body, { childList: true, subtree: true, characterData: true });
   setTimeout(() => observer.disconnect(), 60000);
 })();
@@ -1945,7 +1948,7 @@ footer > .nguyen-footer-links > :is(a, button):focus-visible { text-decoration: 
     clearTimeout(navTimer);
     navTimer = setTimeout(patchFooterNav, 100);
   };
-  const observer = new MutationObserver(scheduleFooterNav);
+  const observer = window.__nguyenCreateObserver(scheduleFooterNav);
   if (document.body) observer.observe(document.body, {
     childList: true,
     subtree: true,
@@ -2064,7 +2067,7 @@ const SOCIAL_MEDIA_PATCH = `
   [250, 750, 1500, 3000, 6000].forEach((delay) => setTimeout(patchSocialMedia, delay));
 
   let socialTimer;
-  const observer = new MutationObserver(() => {
+  const observer = window.__nguyenCreateObserver(() => {
     clearTimeout(socialTimer);
     socialTimer = setTimeout(patchSocialMedia, 100);
   });
@@ -2296,7 +2299,7 @@ const ICON_BAR_PATCH = `
     document.addEventListener('keydown', activateContact, true);
     // Labels are mounted anew on hover, even minutes after load. Observe those
     // changes before paint, and discover replacement footers on breakpoint changes.
-    const observer = new MutationObserver((records) => {
+    const observer = window.__nguyenCreateObserver((records) => {
       const relevant = records.some((record) => {
         const target = record.target.nodeType === Node.TEXT_NODE ? record.target.parentElement : record.target;
         if (target?.closest?.(ROW_SELECTOR)) return true;
@@ -2412,7 +2415,7 @@ const EXTRA_CARD_CLEANUP_PATCH = `
   window.addEventListener('load', cleanup, { once: true });
   [300, 800, 1800, 3500, 6000].forEach((t) => setTimeout(cleanup, t));
   let nexTimer;
-  const obs = new MutationObserver(() => { clearTimeout(nexTimer); nexTimer = setTimeout(cleanup, 150); });
+  const obs = window.__nguyenCreateObserver(() => { clearTimeout(nexTimer); nexTimer = setTimeout(cleanup, 150); });
   if (document.body) obs.observe(document.body, { childList: true, subtree: true });
   setTimeout(() => obs.disconnect(), 10000);
 })();
@@ -2523,7 +2526,7 @@ const PROCESS_TILE_IMAGE_PATCH = `
     applyImage(img, src, alt);
     if (imageObservers.has(img)) return;
 
-    const observer = new MutationObserver(() => applyImage(img, src, alt));
+    const observer = window.__nguyenCreateObserver(() => applyImage(img, src, alt));
     observer.observe(img, {
       attributes: true,
       attributeFilter: ['src', 'srcset', 'sizes', 'style'],
@@ -2567,7 +2570,7 @@ const PROCESS_TILE_IMAGE_PATCH = `
     window.addEventListener('scroll', schedule, { passive: true });
     window.addEventListener('resize', schedule, { passive: true });
 
-    const observer = new MutationObserver(schedule);
+    const observer = window.__nguyenCreateObserver(schedule);
     if (document.body) {
       observer.observe(document.body, {
         childList: true,
@@ -2633,7 +2636,7 @@ const CARD_ROUTING_PATCH = `
   // mutations does not re-scan on each batch. The timed passes above still cover late Framer renders.
   let routeTimer;
   const scheduleRewrite = () => { clearTimeout(routeTimer); routeTimer = setTimeout(rewrite, 150); };
-  const obs = new MutationObserver(scheduleRewrite);
+  const obs = window.__nguyenCreateObserver(scheduleRewrite);
   if (document.body) obs.observe(document.body, { childList: true, subtree: true });
   setTimeout(() => obs.disconnect(), 30000);
 
@@ -2740,7 +2743,7 @@ const HERO_CTA_PATCH = `
   // mutation flood does not trigger a full scan on each batch. The timed passes still cover late renders.
   let ctaTimer;
   const scheduleCtas = () => { clearTimeout(ctaTimer); ctaTimer = setTimeout(patchHeroCtas, 150); };
-  const obs = new MutationObserver(scheduleCtas);
+  const obs = window.__nguyenCreateObserver(scheduleCtas);
   if (document.body) obs.observe(document.body, { childList: true, subtree: true });
   setTimeout(() => obs.disconnect(), 20000);
 })();
@@ -2775,7 +2778,7 @@ const HOMEPAGE_INTRO_IMAGE_SWAP_PATCH = `
     setImp(img, 'object-fit', 'cover');
     setImp(img, 'object-position', 'center');
     if (observers.has(img)) return;
-    const obs = new MutationObserver(() => paintImage(img, url));
+    const obs = window.__nguyenCreateObserver(() => paintImage(img, url));
     obs.observe(img, { attributes: true, attributeFilter: ['src', 'srcset', 'sizes', 'style'] });
     observers.set(img, obs);
   }
@@ -2837,7 +2840,7 @@ const HOMEPAGE_INTRO_IMAGE_SWAP_PATCH = `
   [200, 600, 1200, 2500, 4500, 8000].forEach((t) => setTimeout(run, t));
   let timer;
   const schedule = () => { clearTimeout(timer); timer = setTimeout(run, 200); };
-  const obs = new MutationObserver(schedule);
+  const obs = window.__nguyenCreateObserver(schedule);
   if (document.body) obs.observe(document.body, { childList: true, subtree: true });
   setTimeout(() => obs.disconnect(), 15000);
 })();
@@ -2937,7 +2940,7 @@ const PAGE_VISIBILITY_GUARD_PATCH = `
     wrappers.forEach((wrapper) => {
       if (!watched.has(wrapper)) {
         watched.add(wrapper);
-        const observer = new MutationObserver(() => repairContentWrapper());
+        const observer = window.__nguyenCreateObserver(() => repairContentWrapper());
         observer.observe(wrapper, {
           attributes: true,
           attributeFilter: ['style', 'data-nguyen-card-url', 'data-nguyen-panel-url', 'data-nguyen-link', 'role', 'tabindex'],
@@ -3244,7 +3247,7 @@ const FRAMER_FORM_INQUIRY_CAPTURE_PATCH = `
   scan();
   window.addEventListener('load', scan, { once: true });
   [300, 800, 2000, 4000].forEach((t) => setTimeout(scan, t));
-  const obs = new MutationObserver(scan);
+  const obs = window.__nguyenCreateObserver(scan);
   if (document.body) obs.observe(document.body, { childList: true, subtree: true });
   setTimeout(() => obs.disconnect(), 30000);
 })();
@@ -3262,7 +3265,8 @@ const FRAMER_FORM_INQUIRY_CAPTURE_PATCH = `
 
   const headers = new Headers(response.headers)
   headers.set('Content-Type', 'text/html; charset=utf-8')
-  headers.set('Cache-Control', 'no-store')
+  headers.set('Cache-Control', 'public, max-age=0, s-maxage=3600, stale-while-revalidate=86400, stale-if-error=86400')
+  headers.set('CDN-Cache-Control', 'public, max-age=3600, stale-while-revalidate=86400, stale-if-error=86400')
 
   return new Response(html, { status: response.status, headers })
 }
