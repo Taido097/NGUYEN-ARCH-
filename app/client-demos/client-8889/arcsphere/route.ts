@@ -7,20 +7,31 @@ const NGUYEN_PERFORMANCE_PATCH = `
 (() => {
   if (window.__nguyenCreateObserver) return;
   const NativeObserver = window.MutationObserver;
-  const MAX_LIFETIME = 15000;
+  const MAX_LIFETIME = 10000;
+  const MIN_INTERVAL = 200;
   window.__nguyenCreateObserver = (callback) => {
     let frame = 0;
     let pending = [];
     let timer = null;
+    let lastRun = 0;
+    const flush = (observer) => {
+      frame = 0;
+      timer = null;
+      if (!pending.length) return;
+      const batch = pending;
+      pending = [];
+      lastRun = performance.now();
+      callback(batch, observer);
+    };
     const wrapped = (mutations, observer) => {
       pending.push(...mutations);
-      if (frame) return;
-      frame = window.requestAnimationFrame(() => {
-        frame = 0;
-        const batch = pending;
-        pending = [];
-        callback(batch, observer);
-      });
+      if (frame || timer) return;
+      const wait = Math.max(0, MIN_INTERVAL - (performance.now() - lastRun));
+      if (wait > 0) {
+        timer = window.setTimeout(() => flush(observer), wait);
+        return;
+      }
+      frame = window.requestAnimationFrame(() => flush(observer));
     };
     const observer = new NativeObserver(wrapped);
     timer = window.setTimeout(() => observer.disconnect(), MAX_LIFETIME);
@@ -28,6 +39,7 @@ const NGUYEN_PERFORMANCE_PATCH = `
     observer.disconnect = () => {
       if (timer) window.clearTimeout(timer);
       if (frame) window.cancelAnimationFrame(frame);
+      if (timer) window.clearTimeout(timer);
       pending = [];
       disconnect();
     };
@@ -111,8 +123,13 @@ function removeNonVisualTelemetry(html: string) {
 
 function optimizeImageDecoding(html: string) {
   return html.replace(/<img\b[^>]*>/gi, (tag) => {
-    if (/\bdecoding\s*=/i.test(tag)) return tag;
-    return tag.replace(/<img\b/i, '<img decoding="async"');
+    let next = tag;
+    if (!/\bdecoding\s*=/i.test(next)) next = next.replace(/<img\b/i, '<img decoding="async"');
+    const srcMatch = next.match(/\bsrc=["']([^"']+)["']/i);
+    const src = srcMatch?.[1] || '';
+    const isHero = /vVqkA2phwOpc7kzAHksLgpPasxY|JEOoI9AUjiorAUapWVh1gnkvdBI|eJtReq8aEIEdVjdWqNPxJAANXJQ/i.test(src);
+    if (!isHero && !/\bloading\s*=/i.test(next)) next = next.replace(/<img\b/i, '<img loading="lazy"');
+    return next;
   });
 }
 
@@ -560,7 +577,8 @@ async function getSource() {
   throw lastError instanceof Error ? lastError : new Error('Unable to load source');
 }
 
-export async function GET() {
+export async function getConcept(options: { includeClientPatch?: boolean } = {}) {
+  const includeClientPatch = options.includeClientPatch !== false;
   try {
     let html = await getSource(); html = removeNonVisualTelemetry(html); html = optimizeImageDecoding(html);
     html = html.replace(/<head([^>]*)>/i, `<head$1><base href="${SOURCE_URL}"><meta name="robots" content="noindex,nofollow,noarchive"><meta name="description" content="NGUYEN ARCHITECTURE & ENGINEERING — commercial architecture, engineering, tenant improvement and building permit support in Orange County.">${CLEANUP}${NGUYEN_PERFORMANCE_PATCH}<link rel="preload" as="image" href="/client-8889/homepage-hero-courtyard-morning.webp" fetchpriority="high">`);
@@ -579,9 +597,13 @@ export async function GET() {
     const phoneReplacements = ['(209) 233-8888', '(714) 707-8889']; let phoneIndex = 0;
     html = html.replace(/<a([^>]*href=["']tel:[^"']+["'][^>]*)>([\s\S]*?)<\/a>/gi, (_match, attrs, body) => { const phone = phoneReplacements[Math.min(phoneIndex, phoneReplacements.length - 1)]; phoneIndex += 1; const nextAttrs = attrs.replace(/href=["']tel:[^"']+["']/i, `href="tel:${phone.replace(/[^+\d]/g, '')}"`); const nextBody = body.replace(/>\s*[+()\d .-]{7,}\s*</g, `>${phone}<`); return `<a${nextAttrs}>${nextBody}</a>`; });
 
-    html = html.replace('</body>', `${CLIENT_PATCH}${DESKTOP_SAFETYNET_SCRIPT}</body>`);
+    if (includeClientPatch) html = html.replace('</body>', `${CLIENT_PATCH}${DESKTOP_SAFETYNET_SCRIPT}</body>`);
     return new Response(html, { headers: { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'private, no-store' } });
   } catch {
     return new Response('<!doctype html><html><body style="font-family:Arial,sans-serif;padding:40px">Concept 1 is temporarily unavailable. Please refresh in a moment.</body></html>', { status: 502, headers: { 'Content-Type': 'text/html; charset=utf-8' } });
   }
+}
+
+export async function GET() {
+  return getConcept();
 }
