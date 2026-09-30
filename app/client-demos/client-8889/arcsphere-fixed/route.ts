@@ -161,7 +161,7 @@ const PROCESS_PATCH = `
   patchProcessSection(document.body);
   window.addEventListener('load', () => patchProcessSection(document.body), { once: true });
 
-  const observer = new MutationObserver((mutations) => {
+  const observer = window.__nguyenCreateObserver((mutations) => {
     for (const mutation of mutations) {
       if (mutation.type === 'characterData') {
         const parent = mutation.target.parentElement;
@@ -271,7 +271,7 @@ const ENGINEERING_ROUTE_GUARD_PATCH = `
   [50, 150, 300, 700, 1500, 3000, 6000, 12000, 20000, 40000, 60000].forEach((delay) => setTimeout(markEngineeringRows, delay));
 
   let timer;
-  const observer = new MutationObserver(() => {
+  const observer = window.__nguyenCreateObserver(() => {
     clearTimeout(timer);
     timer = setTimeout(markEngineeringRows, 80);
   });
