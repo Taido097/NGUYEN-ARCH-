@@ -1,4 +1,4 @@
-import { GET as getBaseConcept } from "../arcsphere/route"
+import { getConcept as getBaseConcept } from "../arcsphere/route"
 import { BUILDERS_COMPLETE_PATCH } from "./builders-complete-patch"
 
 const PROCESS_PATCH = `
@@ -281,7 +281,7 @@ const ENGINEERING_ROUTE_GUARD_PATCH = `
 </script>`;
 
 export async function GET() {
-  const response = await getBaseConcept();
+  const response = await getBaseConcept({ includeClientPatch: false });
   if (!response.ok) return response;
 
   const html = await response.text();
