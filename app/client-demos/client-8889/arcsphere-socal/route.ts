@@ -2969,6 +2969,46 @@ const PAGE_VISIBILITY_GUARD_PATCH = `
 })();
 </script>`
 
+
+function deferNguyenPatch(patch: string) {
+  return patch.replace(/<script\b([^>]*)>([\s\S]*?)<\/script>/gi, '<script type="application/x-nguyen-deferred"$1>$2</script>');
+}
+
+const NGUYEN_DEFERRED_PATCH_LOADER = `
+<script id="nguyen-deferred-patch-loader">
+(() => {
+  const run = () => {
+    const pending = Array.from(document.querySelectorAll('script[type="application/x-nguyen-deferred"]'));
+    let index = 0;
+    const step = () => {
+      const end = Math.min(index + 2, pending.length);
+      while (index < end) {
+        const oldScript = pending[index++];
+        const script = document.createElement('script');
+        Array.from(oldScript.attributes).forEach((attr) => {
+          if (attr.name !== 'type') script.setAttribute(attr.name, attr.value);
+        });
+        script.textContent = oldScript.textContent || '';
+        oldScript.replaceWith(script);
+      }
+      if (index < pending.length) {
+        (window.requestAnimationFrame || window.setTimeout)(step, 0);
+      }
+    };
+    step();
+  };
+  const start = () => {
+    if ('requestIdleCallback' in window) {
+      window.requestIdleCallback(run, { timeout: 1400 });
+    } else {
+      window.setTimeout(run, 700);
+    }
+  };
+  if (document.readyState === 'complete') start();
+  else window.addEventListener('load', start, { once: true });
+})();
+</script>`;
+
 export async function GET() {
   const response = await getConcept()
   if (!response.ok) return response
@@ -3261,7 +3301,7 @@ const FRAMER_FORM_INQUIRY_CAPTURE_PATCH = `
   html = html.replace(/hello@(?:arcsphere|nguyen)studio\.ae/gi, 'info@nguyenarchitecture.com')
   html = html.replace('<head>', `<head>${FRAMER_FORM_INQUIRY_CAPTURE_PATCH}`)
   html = html.replace('</head>', `${DOCUMENT_TITLE_LOCK_PATCH}${FOOTER_FIRST_PAINT_STYLE}</head>`)
-  html = html.replace('</body>', `${SPLIT_TEXT_PATCH}${BRAND_PATCH}${SQUARE_IMAGES_PATCH}${SERVICES_ANCHOR_PATCH}${MAIN_NAV_PATCH}${ENGINEERING_SERVICE_PATCH}${PROJECT_CARDS_PATCH}${DESIGN_PANELS_PATCH}${RESIDENTIAL_ROW_IMAGE_PATCH}${BLUEPRINT_IMAGE_PATCH}${PROCESS_TILE_IMAGE_PATCH}${CARD_ROUTING_PATCH}${EXTRA_CARD_CLEANUP_PATCH}${SERVICE_DROPDOWN_PATCH}${PROJECT_TYPE_SECTION_PATCH}${NON_LINKING_PROJECT_PANEL_PATCH}${MOBILE_SECTION_TAP_PATCH}${FOOTER_PATCH}${FOOTER_NAV_PATCH}${SOCIAL_MEDIA_PATCH}${ICON_BAR_PATCH}${TESTIMONIAL_PATCH}${HOMEPAGE_MOBILE_HERO_CROP}${HOMEPAGE_HERO_LOCK_PATCH}${HOMEPAGE_SIDE_HERO_LOCK_PATCH}${FRAMER_FORM_INTERCEPT_PATCH}${HERO_CTA_PATCH}${HOMEPAGE_INTRO_IMAGE_SWAP_PATCH}${PAGE_VISIBILITY_GUARD_PATCH}</body>`)
+  html = html.replace('</body>', `${deferNguyenPatch(SPLIT_TEXT_PATCH)}${deferNguyenPatch(BRAND_PATCH)}${deferNguyenPatch(SQUARE_IMAGES_PATCH)}${SERVICES_ANCHOR_PATCH}${MAIN_NAV_PATCH}${ENGINEERING_SERVICE_PATCH}${PROJECT_CARDS_PATCH}${DESIGN_PANELS_PATCH}${deferNguyenPatch(RESIDENTIAL_ROW_IMAGE_PATCH)}${deferNguyenPatch(BLUEPRINT_IMAGE_PATCH)}${deferNguyenPatch(PROCESS_TILE_IMAGE_PATCH)}${CARD_ROUTING_PATCH}${deferNguyenPatch(EXTRA_CARD_CLEANUP_PATCH)}${SERVICE_DROPDOWN_PATCH}${deferNguyenPatch(PROJECT_TYPE_SECTION_PATCH)}${deferNguyenPatch(NON_LINKING_PROJECT_PANEL_PATCH)}${MOBILE_SECTION_TAP_PATCH}${deferNguyenPatch(FOOTER_PATCH)}${FOOTER_NAV_PATCH}${SOCIAL_MEDIA_PATCH}${ICON_BAR_PATCH}${deferNguyenPatch(TESTIMONIAL_PATCH)}${HOMEPAGE_MOBILE_HERO_CROP}${HOMEPAGE_HERO_LOCK_PATCH}${HOMEPAGE_SIDE_HERO_LOCK_PATCH}${FRAMER_FORM_INTERCEPT_PATCH}${HERO_CTA_PATCH}${deferNguyenPatch(HOMEPAGE_INTRO_IMAGE_SWAP_PATCH)}${PAGE_VISIBILITY_GUARD_PATCH}${NGUYEN_DEFERRED_PATCH_LOADER}</body>`)
 
   const headers = new Headers(response.headers)
   headers.set('Content-Type', 'text/html; charset=utf-8')
